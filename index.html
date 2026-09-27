@@ -1,56 +1,25 @@
-<!doctype html>
-<html lang="lv">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071019">
-<title>SpinGo Camera</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#071019;color:#f3f7fa;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:680px;margin:auto;min-height:100vh;padding:18px;display:flex;flex-direction:column;justify-content:center}
-h1{text-align:center;font-size:24px;margin:0 0 8px}
-p{text-align:center;color:#9db0bf;margin:0 0 22px;line-height:1.45}
-.camera{display:block;width:100%;padding:25px 15px;border-radius:18px;background:#285f8b;border:2px solid #80c4f6;text-align:center;font-size:23px;font-weight:900;cursor:pointer}
-input[type=file]{display:none}
-#preview{display:none;width:100%;max-height:65vh;object-fit:contain;background:#03070a;border-radius:16px;margin-top:16px}
-#state{margin-top:12px;padding:12px;border-radius:12px;background:#101c27;color:#a9bbc9;text-align:center}
-#again{display:none;margin-top:10px;width:100%;padding:15px;border-radius:12px;border:1px solid #49657c;background:#111c27;color:white;font-size:16px;font-weight:800}
-</style>
-</head>
-<body>
-<main>
-<h1>Spin & Go foto</h1>
-<p>Nospied pogu, nobildē situāciju un apstiprini foto telefonā.</p>
-
-<label class="camera">
-📷 BILDĒT
-<input id="camera" type="file" accept="image/*" capture="environment">
-</label>
-
-<img id="preview" alt="Uzbildētais pokera spots">
-<div id="state">Gaida foto.</div>
-<button id="again" onclick="camera.click()">📷 BILDĒT VĒLREIZ</button>
-</main>
-
-<script>
-const camera=document.getElementById("camera");
-const preview=document.getElementById("preview");
-const state=document.getElementById("state");
-const again=document.getElementById("again");
-
-camera.addEventListener("change",()=>{
- const f=camera.files && camera.files[0];
- if(!f) return;
- if(preview.dataset.url) URL.revokeObjectURL(preview.dataset.url);
- const url=URL.createObjectURL(f);
- preview.dataset.url=url;
- preview.src=url;
- preview.style.display="block";
- again.style.display="block";
- state.textContent="✓ Foto pievienots un gatavs augšupielādei / apstrādei.";
- preview.scrollIntoView({behavior:"smooth",block:"center"});
-});
-</script>
-</body>
-</html>
+<!doctype html><html lang="lv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><title>SpinGo Photo Study v6</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:740px;margin:auto;padding:16px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}.muted{color:#9db0bf;line-height:1.45}.camera{display:block;text-align:center;padding:25px;border-radius:17px;background:#285f8b;border:2px solid #80c4f6;font-size:23px;font-weight:900;cursor:pointer}input[type=file]{display:none}#preview{display:none;width:100%;max-height:55vh;object-fit:contain;background:#03070a;border-radius:14px;margin-top:12px}.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:block;color:#9db0bf;font-size:12px;margin:8px 0 4px}input,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:white;font-size:15px}button{font-weight:850}.hide{display:none}.result{text-align:center;padding:20px;background:#09131c;border:1px solid #49657d;border-radius:15px}.action{font-size:34px;font-weight:950;color:#f0c85d;margin:8px}.ctx{font-size:18px;font-weight:750}@media(max-width:520px){.grid{grid-template-columns:1fr}}</style></head><body><main>
+<h1>📷 Spin & Go Photo Study v6</h1><p class=muted>Vienīgā ievade ir foto. OCR sākas automātiski. Ja kāds lauks nav droši nolasīts, pārbaudi to pirms pabeigta handa / treniņa review.</p>
+<section class=card><label class=camera>📷 BILDĒT<input id=photo type=file accept="image/*" capture="environment"></label><img id=preview><div id=status class=status>Gaida foto.</div></section>
+<section id=check class="card hide"><h3>Atpazītā situācija</h3><div class=grid><div><label>Hero hand</label><input id=hand placeholder="AJs / 88 / KQo"></div><div><label>Pozīcija</label><select id=pos><option>BTN</option><option>SB</option><option>BB</option></select></div><div><label>Hero stack</label><input id=hero type=number value=300></div><div><label>Opp 1</label><input id=o1 type=number value=300></div><div><label>Opp 2</label><input id=o2 type=number value=300></div><div><label>Blinds</label><select id=blinds><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div></div><label>Previous action</label><select id=prev><option>FIRST-IN</option><option>FOLD</option><option>CALL/LIMP</option><option>MIN-RAISE</option><option>3x RAISE</option><option>ALL-IN</option></select><label style="font-size:14px"><input id=finished type=checkbox style="width:auto"> Apstiprinu: pabeigts hands / treniņa spots</label><br><br><button onclick=review()>PARĀDĪT RANGE REVIEW</button></section>
+<section id=out class="card hide"><div class=result><div id=action class=action>—</div><div id=ctx class=ctx></div><p id=why class=muted></p></div></section>
+<section class=card><details><summary>OCR diagnostika</summary><div id=ocr class=status>—</div></details></section>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
+const R="AKQJT98765432";let file=null;
+const charts={
+"BTN|8":{pure:"22+,A2s+,K4s+,Q8s+,J8s+,T7s+,97s+,86s+,76s+,65s+,A2o+,K9o+,QTo+,JTo+",act:"ALL-IN",summary:"BTN 8bb: all-in 34.3%, fold 65.7%"},
+"BTN|10":{pure:"22+,A2s+,K4s+,Q7s+,J7s+,T8s+,98s+,87s+,A2o+,KTo+,QTo+,JTo+",act:"OPEN",summary:"BTN 10bb: all-in 26.6%, raise 2bb 7.5%, fold 65.9%"},
+"BTN|15":{pure:"22+,A3s+,K5s+,Q7s+,J8s+,T7s+,97s+,87s+,A6o+,K9o+,QTo+,JTo+",act:"OPEN",summary:"BTN 15bb: plays 32.1%, 2bb raise + jam tree"},
+"SB|8":{pure:"88-22,A2s+,K7s+,K5s-K2s,Q9s,Q6s-Q2s,J7s-J4s,T8s-T6s,97s-96s,85s+,74s+,64s+,54s+,A2o+,K2o+,Q7o+,J9o+,T9o+",act:"ALL-IN",summary:"SB 8bb: all-in 52.6%, raise 6.0%, limp 6.5%, fold 35.0%"},
+"SB|10":{pure:"66-22,KK+,AQs-A5s,A3s-A2s,K9s-K7s,K4s-K2s,Q6s-Q5s,J9s-J7s,J5s,T8s-T7s,T4s,96s+,85s+,75s+,65s+,54s+,A2o+,K3o+,Q8o+,JTo+,T9o+",act:"OPEN",summary:"SB 10bb: all-in 41.7%, raise 2bb 16.5%, limp 0.8%, fold 41.0%"},
+"SB|15":{pure:"44-22,TT+,AQs+,K9s+,QTs,JTs+,T9s+,T7s,T4s,97s+,86s+,76s+,AJo-A2o,KJo,K7o",act:"OPEN",summary:"SB 15bb: all-in 19.5%, raise 2.2bb 26.5%, limp 16%, fold 38%"}
+};
+photo.onchange=async e=>{file=e.target.files?.[0];if(!file)return;preview.src=URL.createObjectURL(file);preview.style.display="block";status.textContent="Foto saņemts — analizēju…";await scan()};
+async function scan(){try{let r=await Tesseract.recognize(file,"eng",{logger:m=>{if(m.status)status.textContent=m.status+" "+Math.round((m.progress||0)*100)+"%"}}),t=r.data.text||"";ocr.textContent=t||"Teksts netika atrasts.";detect(t);status.textContent="✓ OCR pabeigts. Pārbaudi atpazīto situāciju."}catch(e){status.textContent="OCR kļūda: "+e.message}check.classList.remove("hide");check.scrollIntoView({behavior:"smooth"})}
+function detect(t){let c=t.toUpperCase().replace(/\s+/g," "),ls=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"],l=ls.find(x=>c.replace(/\s/g,"").includes(x));if(l)blinds.value=l;if(/\bBUTTON\b|\bBTN\b/.test(c))pos.value="BTN";else if(/\bSB\b/.test(c))pos.value="SB";else if(/\bBB\b/.test(c))pos.value="BB";let m=c.match(/\b(A|K|Q|J|T|[2-9])\s*(A|K|Q|J|T|[2-9])\s*([SO])?\b/);if(m)hand.value=m[1]+m[2]+(m[1]===m[2]?"":(m[3]||"").toLowerCase());let ns=[...c.matchAll(/\b(\d{2,4})\b/g)].map(x=>+x[1]).filter(x=>x>=20&&x<=1500);if(ns.length>=3){hero.value=ns[0];o1.value=ns[1];o2.value=ns[2]}if(pos.value==="BTN")prev.value="FIRST-IN"}
+function norm(h){h=(h||"").trim();return /^[AKQJT2-9]{2}[soSO]?$/.test(h)?h.slice(0,2).toUpperCase()+h.slice(2).toLowerCase():""}
+function tok(h,t){if(t.endsWith("+")){let b=t.slice(0,-1);if(b.length===2&&b[0]===b[1])return h.length===2&&R.indexOf(h[0])<=R.indexOf(b[0]);if(b.length>=2&&h.length===3&&h[0]===b[0]&&h[2]===b[2])return R.indexOf(h[1])<=R.indexOf(b[1])}if(t.includes("-")){let [x,y]=t.split("-");if(h.length===2&&x.length===2&&y.length===2)return R.indexOf(h[0])>=Math.min(R.indexOf(x[0]),R.indexOf(y[0]))&&R.indexOf(h[0])<=Math.max(R.indexOf(x[0]),R.indexOf(y[0]));if(h.length===3&&x.length===3&&y.length===3&&h[0]===x[0]&&h[2]===x[2])return R.indexOf(h[1])>=Math.min(R.indexOf(x[1]),R.indexOf(y[1]))&&R.indexOf(h[1])<=Math.max(R.indexOf(x[1]),R.indexOf(y[1]))}return h.toUpperCase()===t.toUpperCase()}
+function inside(h,s){return s.split(",").some(t=>tok(h,t.trim()))}function dep(x){return[8,10,15,20,25].reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a)}
+function review(){if(!finished.checked){alert("Apstiprini pabeigtu handu / treniņa spotu.");return}let h=norm(hand.value);if(!h){alert("Pārbaudi Hero handu.");return}let bb=+blinds.value.split("/")[1],eff=Math.min(+hero.value||0,+o1.value||0,+o2.value||0)/bb,p=pos.value,d=dep(eff),pa=p==="BTN"?"FIRST-IN":prev.value,c=charts[p+"|"+d];ctx.textContent=`${h} · ${p} · ${eff.toFixed(1)} BB → ${d}bb reference · ${pa}`;if(pa!=="FIRST-IN"){action.textContent="NAV IEBŪVĒTU RESPONSE DATU";why.textContent="Šajā versijā iebūvēti verificētie publiskie opening ranges; response action konkrētajai rokai netiek minēts."}else if(c){if(inside(h,c.pure)){action.textContent=c.act==="ALL-IN"?"ALL-IN (PURE RANGE)":"100% OPEN RANGE";why.textContent=c.summary+" · konkrētais action mix var būt jaukts, ja avots publicē vairākus sizingus."}else{action.textContent="NAV PURE RANGE";why.textContent=c.summary+" · roka nav publicētajā 100% opening daļā; bez hand-level frequency aplikācija action neizdomā."}}else{action.textContent="NAV HAND-LEVEL DATU";why.textContent="Šim 20/25bb reference spotam publiskais aggregate solve ir zināms, bet konkrētās rokas frequency šajā lokālajā versijā nav iebūvēta."}out.classList.remove("hide");out.scrollIntoView({behavior:"smooth"})}
+</script></main></body></html>

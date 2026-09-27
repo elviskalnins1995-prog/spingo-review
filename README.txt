@@ -1,10 +1,5 @@
-SpinGo Camera First v3
-
-Telefonā:
-1. Atver index.html no HTTPS hostinga.
-2. Nospied BILDĒT.
-3. Atbalstītā mobilajā pārlūkā tiks piedāvāta aizmugurējā kamera.
-4. Uzbildē un apstiprini foto.
-5. Foto automātiski parādās lapā un ir gatavs tālākai apstrādei.
-
-Piezīme: konkrēta pārlūka/telefona sistēma var parādīt arī savas attēla izvēles opcijas.
+SpinGo Photo Study v6
+Vienīgā ārējā ievade ir foto. Nav JSON/range importa.
+Iebūvēti publiski verificēti 3-max Spin & Go opening-range dati 8/10/15bb BTN/SB.
+20/25bb un response spotos aplikācija neizdomā hand-level GTO frequencies, ja tās nav lokāli iebūvētas.
+Paredzēts pabeigtu handu un treniņa spotu review.
