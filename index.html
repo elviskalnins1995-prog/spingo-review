@@ -1,135 +1,249 @@
 <!doctype html>
-<html lang="lv"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071019"><title>SpinGo Photo Review v7</title>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<title>SpinGo Photo Review v8</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:760px;margin:auto;padding:16px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
-.camera{display:block;text-align:center;padding:25px;border-radius:17px;background:#285f8b;border:2px solid #80c4f6;font-size:23px;font-weight:900;cursor:pointer}
-input[type=file]{display:none}#preview{display:none;width:100%;max-height:50vh;object-fit:contain;background:#03070a;border-radius:14px;margin-top:12px}
-.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.muted{color:#9db0bf;line-height:1.45}
-.result{text-align:center;background:#09131c;border:1px solid #49657d;border-radius:15px;padding:22px}.action{font-size:38px;font-weight:950;color:#f0c85d;margin:8px}
-.freq{font-size:18px;font-weight:800}.hide{display:none}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-label{display:block;color:#9db0bf;font-size:12px;margin:8px 0 4px}input.manual,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:#fff;font-size:15px}
-button{font-weight:850;cursor:pointer}.good{color:#55d792}.warn{color:#f0c85d}@media(max-width:520px){.grid{grid-template-columns:1fr}}
-</style></head><body><main>
-<h1>📷 Spin & Go Photo Review v7</h1>
-<p class=muted>Pabeigta handa / treniņa spota foto. Pēc foto OCR sākas automātiski un, ja visi nepieciešamie lauki ir atpazīti, review parādās bez papildu pogas.</p>
+main{max-width:780px;margin:auto;padding:15px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
+h1{font-size:24px}.muted{color:#9db0bf;line-height:1.45}.camera{display:block;text-align:center;padding:24px;border-radius:16px;background:#285f8b;border:2px solid #80c4f6;font-size:23px;font-weight:900;cursor:pointer}
+input[type=file]{display:none}#preview{display:none;width:100%;max-height:52vh;object-fit:contain;border-radius:14px;background:#03070a;margin-top:12px}
+.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}
+.result{text-align:center;background:#09131c;border:1px solid #49657d;border-radius:15px;padding:20px}.action{font-size:38px;font-weight:950;color:#f0c85d;margin:7px}.sub{font-size:18px;font-weight:800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none}label{display:block;color:#9db0bf;font-size:12px;margin:7px 0 4px}
+input.manual,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:#fff;font-size:15px}
+button{font-weight:850;cursor:pointer}.pill{display:inline-block;padding:5px 9px;margin:3px;border-radius:999px;background:#173047}.good{color:#55d792}.warn{color:#f0c85d}
+canvas{max-width:100%;border-radius:10px}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<h1>📷 Spin & Go Photo Review v8</h1>
+<p class=muted>Foto analizators pabeigtiem handiem un treniņa spotiem. v8 atsevišķi lasa OlyBet/GG tipa galda zonas, nosaka 2-handed/3-handed stāvokli un izmanto atsevišķu heads-up stratēģijas kontekstu.</p>
 
 <section class=card>
-<label class=camera>📷 BILDĒT<input id=photo type=file accept="image/*" capture="environment"></label>
+<label class=camera>📷 BILDĒT / IZVĒLĒTIES FOTO<input id=photo type=file accept="image/*" capture="environment"></label>
 <img id=preview><div id=status class=status>Gaida foto.</div>
 </section>
 
-<section id=out class="card hide"><div class=result>
-<div id=action class=action>—</div><div id=freq class=freq></div><div id=spot></div><p id=why class=muted></p>
-</div></section>
-
-<section id=fix class="card hide"><h3>Nepieciešama pārbaude</h3>
-<p class=muted>OCR nevar droši saprast grafiskas kārtis vai action tikai no parasta teksta. Izlabo tikai trūkstošos laukus; review pārrēķināsies.</p>
+<section id=detected class="card hide">
+<h3>Atpazītā situācija</h3><div id=chips></div>
 <div class=grid>
-<div><label>Hero hand</label><input class=manual id=hand placeholder="AJs / 88 / KQo"></div>
-<div><label>Pozīcija</label><select id=pos><option value="">—</option><option>BTN</option><option>SB</option><option>BB</option></select></div>
+<div><label>Hero hand</label><input class=manual id=hand placeholder="J4o"></div>
+<div><label>Spēlētāji</label><select id=players><option value="2">Heads-up (2)</option><option value="3">3-max (3)</option></select></div>
+<div><label>Hero pozīcija</label><select id=pos><option value="">—</option><option>BTN/SB</option><option>BB</option><option>BTN</option><option>SB</option></select></div>
 <div><label>Hero stack</label><input class=manual id=hero type=number></div>
-<div><label>Opp 1 stack</label><input class=manual id=o1 type=number></div>
-<div><label>Opp 2 stack</label><input class=manual id=o2 type=number></div>
-<div><label>Blinds</label><select id=blinds><option value="">—</option><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div>
+<div><label>Opponent 1</label><input class=manual id=o1 type=number></div>
+<div><label>Opponent 2</label><input class=manual id=o2 type=number></div>
+<div><label>Pašreizējie blindi</label><select id=blinds><option value="">—</option><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div>
+<div><label>Pot</label><input class=manual id=pot type=number></div>
 </div>
-<label>Spots</label><select id=node><option value="">—</option><option value="FIRST-IN">First-in / RFI</option><option value="VS_BTN_JAM">BB vs BTN shove</option><option value="VS_SB_JAM">BB vs SB shove</option></select>
-<button onclick=tryReview()>PĀRRĒĶINĀT REVIEW</button>
+<label>Spots (pabeigtam handam / treniņam)</label>
+<select id=node>
+<option value="">—</option>
+<option value="HU_BTN_FIRST">HU BTN/SB first-in</option>
+<option value="HU_BB_VS_MIN">HU BB vs BTN min-raise</option>
+<option value="HU_BB_VS_LIMP">HU BB vs BTN limp</option>
+<option value="HU_BB_VS_JAM">HU BB vs BTN shove</option>
+<option value="3_BTN_FIRST">3-max BTN first-in</option>
+<option value="3_SB_FIRST">3-max SB first-in</option>
+<option value="3_BB_VS_BTN_JAM">3-max BB vs BTN shove</option>
+<option value="3_BB_VS_SB_JAM">3-max BB vs SB shove</option>
+</select>
+<button onclick="review()">PĀRRĒĶINĀT POST-HAND REVIEW</button>
 </section>
 
-<section class=card><details><summary>OCR diagnostika</summary><div id=ocr class=status>—</div></details></section>
+<section id=out class="card hide"><div class=result>
+<div id=action class=action>—</div><div id=summary class=sub></div><div id=spot></div><p id=why class=muted></p>
+</div></section>
+
+<section class=card><details><summary>Tehniskā diagnostika / nolasītās zonas</summary><div id=diag class=status>—</div><canvas id=debug></canvas></details></section>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-const R="AKQJT98765432"; let file=null;
+const R="AKQJT98765432"; let imgObj=null, rawText="";
 
-// Conservative embedded study references. Exact hand-level action is only emitted
-// where the public source gives a textual pure range/guideline.
-const DATA={
- "BTN|FIRST-IN|10":{range:"22+,A2s+,K4s+,Q7s+,J7s+,T8s+,98s+,87s+,A2o+,KTo+,QTo+,JTo+",action:"OPEN",summary:"10bb BTN overall: all-in 26.6% · raise 2bb 7.5% · fold 65.9%"},
- "SB|FIRST-IN|20":{range:"44-22,88+,A7s+,K9s+,JTs+,T9s+,95s,A9o-A8o,A6o,K6o",action:"OPEN",summary:"20bb SB overall: all-in 7.4% · raise 2.5bb 33.9% · limp 22.8% · fold 35.9%"},
- "BB|VS_BTN_JAM|10":{range:"22+,A3o+,A2s+,K9s+,KTo+,QJo+,JTs+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 10bb"},
- "BB|VS_BTN_JAM|15":{range:"33+,A4s+,A8o+,JTs+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 15bb"},
- "BB|VS_BTN_JAM|25":{range:"44+,A8s+,ATo+,KQ+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 25bb"},
- "BB|VS_SB_JAM|10":{range:"22+,A2o+,A2s+,K2s+,K6o+,J8s+,JTo+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 10bb"},
- "BB|VS_SB_JAM|15":{range:"22+,A2s+,A4o+,J9s+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 15bb"},
- "BB|VS_SB_JAM|25":{range:"33+,A6s+,ATo+,KTs+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 25bb"}
+// Public textual ranges/guidelines embedded locally.
+// No invented mixed frequencies.
+const HU_JAM_CALL={
+ 10:"22+,A2s+,K9o+,K7s+,JTo+,J9s+",
+ 13:"22+,A2o+,K6o+,K3s+,Q9o+,Q7s+,98s+",
+ 25:"44+,ATo+,KQo+,QJs+"
+};
+const THREE_BTN_JAM_CALL={
+ 10:"22+,A3o+,A2s+,K9s+,KTo+,QJo+,JTs+",
+ 15:"33+,A4s+,A8o+,JTs+",
+ 25:"44+,A8s+,ATo+,KQ+"
+};
+const THREE_SB_JAM_CALL={
+ 10:"22+,A2o+,A2s+,K2s+,K6o+,J8s+,JTo+",
+ 15:"22+,A2s+,A4o+,J9s+",
+ 25:"33+,A6s+,ATo+,KTs+"
 };
 
 photo.onchange=async e=>{
- file=e.target.files?.[0]; if(!file)return;
- preview.src=URL.createObjectURL(file); preview.style.display="block";
- out.classList.add("hide"); fix.classList.add("hide");
- status.textContent="Foto saņemts — OCR sākas automātiski…";
- await scan();
+ const f=e.target.files?.[0]; if(!f)return;
+ preview.src=URL.createObjectURL(f); preview.style.display="block";
+ out.classList.add("hide"); detected.classList.add("hide");
+ status.textContent="Foto saņemts — sadalu galda zonās…";
+ imgObj=await loadImage(f);
+ await analyzeImage();
 };
 
-async function scan(){
+function loadImage(f){return new Promise((res,rej)=>{let im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(f)})}
+function cropCanvas(x,y,w,h,scale=2){
+ const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(imgObj.width*w*scale));c.height=Math.max(1,Math.round(imgObj.height*h*scale));
+ const q=c.getContext("2d");q.drawImage(imgObj,imgObj.width*x,imgObj.height*y,imgObj.width*w,imgObj.height*h,0,0,c.width,c.height);return c
+}
+async function ocrCanvas(c, whitelist=""){
+ let opts={logger:m=>{if(m.status==="recognizing text")status.textContent="OCR "+Math.round((m.progress||0)*100)+"%"}};
+ if(whitelist)opts.tessedit_char_whitelist=whitelist;
+ let r=await Tesseract.recognize(c,"eng",opts);return (r.data.text||"").trim()
+}
+function nums(t){return [...t.matchAll(/\b(\d{1,4})\b/g)].map(x=>+x[1]).filter(x=>x>0)}
+function rankFrom(t){t=t.toUpperCase().replace(/10/g,"T");let m=t.match(/[AKQJT2-9]/);return m?m[0]:""}
+
+async function analyzeImage(){
  try{
-  const r=await Tesseract.recognize(file,"eng",{logger:m=>{
-   if(m.status)status.textContent=m.status+" "+Math.round((m.progress||0)*100)+"%";
-  }});
-  const t=r.data.text||""; ocr.textContent=t||"Teksts netika atrasts.";
-  detect(t); status.textContent="✓ OCR pabeigts.";
- }catch(e){status.textContent="OCR kļūda: "+e.message}
- tryReview(true);
+  // Calibrated to the supplied OlyBet/GG-style screenshot, with broad ROIs.
+  const zones={
+   top:cropCanvas(.00,.00,.42,.10,2),
+   oppL:cropCanvas(.05,.10,.28,.32,2),
+   oppR:cropCanvas(.68,.10,.27,.32,2),
+   pot:cropCanvas(.37,.26,.28,.18,2),
+   hero:cropCanvas(.38,.66,.27,.31,2),
+   card1:cropCanvas(.425,.69,.065,.16,4),
+   card2:cropCanvas(.485,.69,.065,.16,4),
+   actions:cropCanvas(.58,.76,.41,.23,2)
+  };
+  status.textContent="Lasu galda tekstu pa zonām…";
+  const [topT,lT,rT,potT,heroT,aT,c1T,c2T]=await Promise.all([
+    ocrCanvas(zones.top),ocrCanvas(zones.oppL),ocrCanvas(zones.oppR),ocrCanvas(zones.pot),
+    ocrCanvas(zones.hero),ocrCanvas(zones.actions),
+    ocrCanvas(zones.card1,"AKQJT23456789"),ocrCanvas(zones.card2,"AKQJT23456789")
+  ]);
+  rawText=[topT,lT,rT,potT,heroT,aT,c1T,c2T].join("\n");
+  let lnums=nums(lT), rnums=nums(rT), hnums=nums(heroT), pnums=nums(potT), anums=nums(aT);
+
+  // Seats: if only one upper seat contains meaningful stack/name text => HU.
+  let leftSeat=(lT.replace(/\W/g,"").length>3), rightSeat=(rT.replace(/\W/g,"").length>3);
+  players.value=(leftSeat&&rightSeat)?"3":"2";
+
+  // Stack candidates favor 2-4 digit values, excluding obvious bet sizes if multiple.
+  if(hnums.length)hero.value=Math.max(...hnums.filter(n=>n<=2000));
+  if(lnums.length)o1.value=Math.max(...lnums.filter(n=>n<=2000));
+  if(players.value==="3"&&rnums.length)o2.value=Math.max(...rnums.filter(n=>n<=2000)); else o2.value="";
+  if(pnums.length)pot.value=pnums.find(n=>n<=2000)||"";
+
+  // Dealer marker near hero + HU => BTN/SB. OCR may see "D" in hero zone.
+  if(players.value==="2" && /\bD\b|DEALER|BUTTON/i.test(heroT))pos.value="BTN/SB";
+
+  // Do NOT treat "Next Blinds" as current blinds.
+  // Infer current blind level only from action/bet geometry/text when unambiguous.
+  let callm=aT.match(/CALL\D{0,6}(\d{1,3})/i);
+  let raisem=aT.match(/RAISE\s*TO\D{0,6}(\d{1,3})/i);
+  if(callm){
+    let call=+callm[1];
+    // In the supplied layout Call 30 with visible 30/60 contributions implies 30/60.
+    let candidate=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"].find(x=>+x.split("/")[0]===call);
+    if(candidate)blinds.value=candidate;
+  }
+
+  // Card ranks from dedicated ROIs. Suitedness from dominant card background hue.
+  let r1=rankFrom(c1T),r2=rankFrom(c2T);
+  if(r1&&r2){
+    let s1=dominantSuit(zones.card1),s2=dominantSuit(zones.card2);
+    hand.value=r1+r2+(r1===r2?"":(s1&&s2&&s1===s2?"s":"o"));
+  }
+
+  // Spot suggestion only when structural clues are strong.
+  if(players.value==="2"){
+    if(pos.value==="BTN/SB"){
+      // If call button is visible, hero is facing a bet/raise, so don't call it first-in.
+      node.value=/CALL/i.test(aT)?"":"HU_BTN_FIRST";
+    } else if(pos.value==="BB"){
+      if(/CALL/i.test(aT)&&/RAISE/i.test(aT))node.value="HU_BB_VS_MIN";
+    }
+  } else {
+    if(pos.value==="BTN")node.value="3_BTN_FIRST";
+    if(pos.value==="SB")node.value="3_SB_FIRST";
+  }
+
+  chips.innerHTML=[
+   `<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`,
+   hand.value?`<span class=pill>${hand.value}</span>`:"",
+   hero.value?`<span class=pill>Hero ${hero.value}</span>`:"",
+   o1.value?`<span class=pill>Opp ${o1.value}</span>`:"",
+   pot.value?`<span class=pill>Pot ${pot.value}</span>`:""
+  ].join("");
+
+  diag.textContent=`TOP:\n${topT}\n\nOPP-L:\n${lT}\n\nOPP-R:\n${rT}\n\nPOT:\n${potT}\n\nHERO:\n${heroT}\n\nACTIONS:\n${aT}\n\nCARD1:${c1T} CARD2:${c2T}`;
+  drawDebug();
+  detected.classList.remove("hide");
+  status.textContent="✓ Foto sadalīts un nolasīts. Pārbaudi atpazīto situāciju.";
+  detected.scrollIntoView({behavior:"smooth"});
+ }catch(e){status.textContent="Analīzes kļūda: "+e.message}
 }
 
-function detect(t){
- const c=t.toUpperCase().replace(/\s+/g," ");
- const levels=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"];
- const l=levels.find(x=>c.replace(/\s/g,"").includes(x)); if(l)blinds.value=l;
- if(/\bBUTTON\b|\bBTN\b/.test(c))pos.value="BTN"; else if(/\bSB\b/.test(c))pos.value="SB"; else if(/\bBB\b/.test(c))pos.value="BB";
- const hm=c.match(/\b(A|K|Q|J|T|[2-9])\s*(A|K|Q|J|T|[2-9])\s*([SO])?\b/);
- if(hm)hand.value=hm[1]+hm[2]+(hm[1]===hm[2]?"":(hm[3]||"").toLowerCase());
- const ns=[...c.matchAll(/\b(\d{2,4})\b/g)].map(x=>+x[1]).filter(x=>x>=20&&x<=1500);
- if(ns.length>=3){hero.value=ns[0];o1.value=ns[1];o2.value=ns[2]}
- if(pos.value==="BTN")node.value="FIRST-IN";
+function dominantSuit(c){
+ const q=c.getContext("2d"),d=q.getImageData(0,0,c.width,c.height).data;let red=0,green=0,blue=0,black=0;
+ for(let i=0;i<d.length;i+=16){
+  let r=d[i],g=d[i+1],b=d[i+2];
+  if(r>120&&r>g*1.25&&r>b*1.25)red++;
+  else if(g>100&&g>r*1.18&&g>b*1.15)green++;
+  else if(b>100&&b>r*1.15&&b>g*1.05)blue++;
+  else if(r<80&&g<80&&b<80)black++;
+ }
+ let a=[["H/D",red],["C",green],["S",blue],["black",black]].sort((x,y)=>y[1]-x[1]);
+ return a[0][1]>10?a[0][0]:"";
 }
-
+function nearest(x,arr){return arr.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a)}
 function norm(h){h=(h||"").trim();return /^[AKQJT2-9]{2}[soSO]?$/.test(h)?h.slice(0,2).toUpperCase()+h.slice(2).toLowerCase():""}
-function nearest(x){return[8,10,12,15,20,25].reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a)}
 
 function token(h,t){
  if(t.endsWith("+")){
   let b=t.slice(0,-1);
-  if(b.length===2&&b[0]===b[1])return h.length===2&&R.indexOf(h[0])<=R.indexOf(b[0]);
-  if(b.length===2&&b[0]!==b[1])return h.length>=2&&h[0]===b[0]&&R.indexOf(h[1])<=R.indexOf(b[1]);
+  if(b.length===2&&b[0]===b[1])return h.length===2&&h[0]===h[1]&&R.indexOf(h[0])<=R.indexOf(b[0]);
+  if(b.length===2)return h.length>=2&&h[0]===b[0]&&R.indexOf(h[1])<=R.indexOf(b[1]);
   if(b.length===3)return h.length===3&&h[0]===b[0]&&h[2].toLowerCase()===b[2].toLowerCase()&&R.indexOf(h[1])<=R.indexOf(b[1]);
  }
- if(t.includes("-")){
-  let [x,y]=t.split("-");
-  if(h.length===2&&x.length===2&&y.length===2&&x[0]===x[1]&&y[0]===y[1]){
-   let z=R.indexOf(h[0]);return h[0]===h[1]&&z>=Math.min(R.indexOf(x[0]),R.indexOf(y[0]))&&z<=Math.max(R.indexOf(x[0]),R.indexOf(y[0]));
-  }
-  if(h.length>=2&&x[0]===y[0]&&h[0]===x[0]){
-   let z=R.indexOf(h[1]);return z>=Math.min(R.indexOf(x[1]),R.indexOf(y[1]))&&z<=Math.max(R.indexOf(x[1]),R.indexOf(y[1]));
-  }
- }
- return h.toUpperCase()===t.toUpperCase();
+ return h.toUpperCase()===t.toUpperCase()
 }
 function inside(h,s){return s.split(",").some(t=>token(h,t.trim()))}
 
-function tryReview(auto=false){
- const h=norm(hand.value),p=pos.value,n=node.value,b=blinds.value;
- const stacks=[+hero.value,+o1.value,+o2.value];
- const missing=[]; if(!h)missing.push("hand");if(!p)missing.push("pozīcija");if(!b)missing.push("blindi");if(stacks.some(x=>!x))missing.push("stacki");if(!n)missing.push("spots/action");
- if(missing.length){
-  fix.classList.remove("hide");out.classList.add("hide");
-  status.textContent="OCR pabeigts, bet vajag pārbaudīt: "+missing.join(", ")+".";
-  if(auto)fix.scrollIntoView({behavior:"smooth"}); return;
+function review(){
+ let h=norm(hand.value),p=+players.value,bb=blinds.value?+blinds.value.split("/")[1]:0,hs=+hero.value,os=+o1.value,n=node.value;
+ if(!h||!bb||!hs||!os||!n){action.textContent="NEPIETIEK DATU";summary.textContent="Pārbaudi handu, stackus, blindus un spotu.";why.textContent="v8 neizdomā trūkstošos laukus.";out.classList.remove("hide");return}
+ let eff=Math.min(hs,os)/bb;
+ spot.textContent=`${h} · ${p===2?"HU":"3-max"} · ${eff.toFixed(1)} BB · ${n}`;
+ if(n==="HU_BB_VS_JAM"){
+   let d=nearest(eff,[10,13,25]),range=HU_JAM_CALL[d];
+   action.textContent=inside(h,range)?"CALL":"FOLD";summary.textContent=`HU BB vs BTN shove · ${d}bb reference`;
+   why.textContent="Iebūvēta publiski aprakstītā heads-up call-vs-shove guideline.";
+ } else if(n==="3_BB_VS_BTN_JAM"){
+   let d=nearest(eff,[10,15,25]),range=THREE_BTN_JAM_CALL[d];
+   action.textContent=inside(h,range)?"CALL":"FOLD";summary.textContent=`3-max BB vs BTN shove · ${d}bb reference`;why.textContent="Iebūvēta publiski aprakstītā 3-max guideline.";
+ } else if(n==="3_BB_VS_SB_JAM"){
+   let d=nearest(eff,[10,15,25]),range=THREE_SB_JAM_CALL[d];
+   action.textContent=inside(h,range)?"CALL":"FOLD";summary.textContent=`3-max BB vs SB shove · ${d}bb reference`;why.textContent="Iebūvēta publiski aprakstītā 3-max guideline.";
+ } else if(n==="HU_BTN_FIRST"){
+   action.textContent="MIXED STRATEGY";summary.textContent=eff<=11?"HU BTN: daudz limp + vairāk open-shove":eff<=15?"HU BTN: pārsvarā limp, arī 2x raise un shove":"HU BTN: 2x raise + limp";
+   why.textContent="Publiskais HU GTO materiāls apraksta mixed tree; v8 neizdomā konkrētās rokas frekvenci, ja tā nav publicēta tekstā.";
+ } else if(n==="HU_BB_VS_MIN"){
+   action.textContent="MIXED DEFENSE";summary.textContent=eff<=11?"HU BB: ļoti plaša aizsardzība; vairāk shove":"HU BB: call / shove / fold pēc handa";
+   why.textContent="Heads-up BB stratēģija ir atkarīga no precīza stack depth un hand-level mix; šeit netiek izdomāti procenti.";
+ } else if(n==="HU_BB_VS_LIMP"){
+   action.textContent="CHECK / RAISE TREE";summary.textContent="HU BB pret BTN limp";why.textContent="Publiskā stratēģija izmanto gan check, gan raise/jam atkarībā no stacka un handa.";
+ } else {
+   action.textContent="RANGE REVIEW";summary.textContent="3-max opening/response spot";why.textContent="Šim mezglam v8 rāda strukturētu spotu, bet neizdomā nepublicētu hand-level frequency.";
  }
- const bb=+b.split("/")[1],eff=Math.min(...stacks)/bb,d=nearest(eff),key=`${p}|${n}|${d}`,entry=DATA[key];
- spot.textContent=`${h} · ${p} · ${eff.toFixed(1)} BB → ${d}bb reference · ${n}`;
- if(entry){
-   const yes=inside(h,entry.range);
-   if(entry.action==="CALL"){action.textContent=yes?"CALL":"FOLD";freq.textContent=entry.summary;why.textContent="Hand-level rezultāts no iebūvētās publiskās guideline range."}
-   else {action.textContent=yes?"IN PURE OPEN RANGE":"OUTSIDE PURE RANGE";freq.textContent=entry.summary;why.textContent="Publiskais avots šajā spotā izmanto vairākus action sizingus; bez konkrētās rokas frequency aplikācija neizdomā, kurš sizing jālieto."}
- }else{
-   action.textContent="NAV VERIFICĒTU HAND-LEVEL DATU";freq.textContent="Šim mezglam nav lokāli iebūvēta droša konkrētās rokas frekvence.";why.textContent="Review apzināti neģenerē izdomātu GTO darbību.";
- }
- out.classList.remove("hide");fix.classList.add("hide");out.scrollIntoView({behavior:"smooth"});
+ out.classList.remove("hide");out.scrollIntoView({behavior:"smooth"});
+}
+
+function drawDebug(){
+ const c=debug,q=c.getContext("2d");c.width=imgObj.width;c.height=imgObj.height;q.drawImage(imgObj,0,0);
+ q.lineWidth=Math.max(2,imgObj.width/400);q.strokeStyle="yellow";
+ [[.00,.00,.42,.10],[.05,.10,.28,.32],[.68,.10,.27,.32],[.37,.26,.28,.18],[.38,.66,.27,.31],[.425,.69,.065,.16],[.485,.69,.065,.16],[.58,.76,.41,.23]].forEach(z=>q.strokeRect(z[0]*c.width,z[1]*c.height,z[2]*c.width,z[3]*c.height));
 }
 </script></main></body></html>
