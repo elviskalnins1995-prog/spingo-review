@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v12</title>
+<title>SpinGo Photo Review v13</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,8 +20,8 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v12</h1>
-<p class="muted">v12 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v13</h1>
+<p class="muted">v13 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -74,18 +74,22 @@ let sourceImage=null, normCanvas=null;
 
 // Coordinates below are relative to the NORMALIZED poker window, not the phone photo.
 const B={
- title:[.00,.00,.48,.075],
- next:[.00,.055,.42,.065],
- leftStack:[.105,.205,.17,.13],
- rightStack:[.745,.205,.17,.13],
- leftBet:[.205,.315,.085,.09],
- rightBet:[.715,.315,.085,.09],
- pot:[.405,.315,.20,.075],
- dealer:[.405,.655,.09,.09],
- card1:[.432,.704,.030,.060],
- card2:[.493,.704,.030,.060],
- heroStack:[.425,.815,.17,.12],
- actions:[.585,.785,.41,.205]
+ title:[.00,.00,.50,.070],
+ next:[.00,.055,.43,.060],
+
+ // seats/stacks in the correctly normalized classic-deck client
+ leftStack:[.115,.285,.175,.120],
+ rightStack:[.735,.285,.175,.120],
+ leftBet:[.205,.345,.095,.105],
+ rightBet:[.705,.345,.095,.105],
+ pot:[.405,.335,.205,.090],
+
+ // Hero area
+ dealer:[.405,.655,.095,.090],
+ card1:[.425,.690,.065,.120],
+ card2:[.485,.690,.065,.120],
+ heroStack:[.420,.805,.185,.130],
+ actions:[.585,.775,.415,.225]
 };
 
 photo.onchange=async e=>{
@@ -241,7 +245,12 @@ async function voteOCR(name,white,validator,psm="7"){
  return {value,raw:raw.join(" | "),votes:count[value]};
 }
 const num=(min,max)=>(t)=>{let m=(t||"").match(/\d{1,4}/g);if(!m)return null;let a=m.map(Number).filter(x=>x>=min&&x<=max);return a.length?a[a.length-1]:null};
-const rank=t=>{t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");return t.length===1?t:null};
+const rank=t=>{
+ t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[|IL]/g,"J").replace(/[^AKQJT2-9]/g,"");
+ if(!t)return null;
+ // Prefer the first plausible rank. Never invent a rank when OCR returns no rank glyph.
+ return t[0]||null;
+};
 
 function yellowRatio(c){
  let d=c.getContext("2d").getImageData(0,0,c.width,c.height).data,n=0,N=0;
@@ -253,14 +262,32 @@ function suitColor(name){
  for(let i=0;i<d.length;i+=20){let r=d[i],g=d[i+1],b=d[i+2];if(r>125&&r>g*1.35&&r>b*1.35)R++;if(r<85&&g<85&&b<85)K++}
  return R>K*.12?"red":"black";
 }
+
+async function cardRankOCR(name){
+ let full=crop(name,8);
+ let c=document.createElement("canvas");
+ // Classic deck: rank is in upper-left; retain enough area for K/Q/J shapes.
+ c.width=Math.round(full.width*.48); c.height=Math.round(full.height*.52);
+ c.getContext("2d").drawImage(full,0,0,c.width,c.height,0,0,c.width,c.height);
+ let vals=[],raw=[];
+ for(let th of [115,135,155,175,195,215]){
+   let t=await tess(prep(c,th),"AKQJT23456789","10");
+   raw.push(th+":"+t);
+   let v=rank(t); if(v)vals.push(v);
+ }
+ if(!vals.length)return {value:null,raw:raw.join(" | "),votes:0};
+ let count={}; vals.forEach(v=>count[v]=(count[v]||0)+1);
+ let value=Object.keys(count).sort((x,y)=>count[y]-count[x])[0];
+ return {value,raw:raw.join(" | "),votes:count[value]};
+}
 async function analyzeNormalized(){
  status.textContent="Nolasu normalizēto galdu…";
  try{
   let [title,next,c1,c2,hs,ls,rs,lb,rb,pv]=await Promise.all([
     voteOCR("title","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.-|/ ",t=>t,"6"),
     voteOCR("next","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/ ",t=>t,"6"),
-    voteOCR("card1","AKQJT23456789",rank,"10"),
-    voteOCR("card2","AKQJT23456789",rank,"10"),
+    cardRankOCR("card1"),
+    cardRankOCR("card2"),
     voteOCR("heroStack","0123456789",num(20,2000)),
     voteOCR("leftStack","0123456789",num(20,2000)),
     voteOCR("rightStack","0123456789",num(20,2000)),
@@ -277,7 +304,8 @@ async function analyzeNormalized(){
 
   hero.value=hs.value||"";oppL.value=ls.value||"";oppR.value=rs.value||"";
   betL.value=lb.value||"";betR.value=rb.value||"";pot.value=pv.value||"";
-  players.value=(ls.value&&rs.value)?"3":"2";
+  let occupied=(ls.value?1:0)+(rs.value?1:0);
+  players.value=occupied>=2?"3":"2";
 
   let yr=yellowRatio(crop("dealer",3));
   if(yr>.003)pos.value=players.value==="2"?"BTN/SB":"BTN";else pos.value="";
@@ -299,9 +327,12 @@ async function analyzeNormalized(){
    ["left stack",!!ls.value,ls.votes],["right stack",!!rs.value,rs.votes],
    ["position",!!pos.value,yr>.003?5:0],["blinds",!!blinds.value,bm?5:2],["pot",!!pv.value,pv.votes]
   ];
+  // Reject obvious blind-as-stack mistakes.
+  if(ls.value && lb.value && +ls.value===+lb.value){oppL.value="";ls.value=null}
+  if(rs.value && rb.value && +rs.value===+rb.value){oppR.value="";rs.value=null}
   let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v12 apzināti neatmin trūkstošos laukus.`:
+   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v13 apzināti neatmin trūkstošos laukus.`:
    `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+

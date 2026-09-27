@@ -1,17 +1,27 @@
-SpinGo Photo Review v12
+SpinGo Photo Review v13
 
-Fixes based on the user's v11 screenshot:
-- v11 was not actually isolating the poker client; the normalized canvas still contained most of the phone photograph.
-- v12 detects a large dark poker-client rectangle and scores candidates by dark-content fraction.
-- Aspect-ratio acceptance is widened for photographed/windowed clients.
-- JS fallback now searches dark horizontal/vertical bands instead of percentile bounds.
-- Classic white-card rank ROIs are tightened to the upper-left rank glyphs.
-- Current blind parser tolerates OCR variants of 'Blinds 10 | 20'.
-- If the detected crop is nearly the whole photo, v12 warns instead of silently treating it as a good crop.
+This revision is based on the user's v12 result screenshot.
 
-Reference target from the supplied classic-deck photo:
-K♠ J♥, 3-max, BTN, Hero 300, opponents 290/280, current blinds 10/20,
-next blinds 15/30, pot 30, posted bets 10/20.
+What v12 proved:
+- poker-client detection/cropping now works correctly;
+- title/current blinds and Hero 300 can be read;
+- dealer marker can be found.
 
-This remains browser-side heuristic CV/OCR, not a trained custom vision model.
+What was wrong:
+- opponent stack ROIs were vertically too high/low relative to the normalized client, so seat occupancy failed and 3-max was incorrectly classified as heads-up;
+- card rank ROIs were too small, causing blank Hero hand.
+
+v13 changes:
+- recalibrated left/right stack, bet, pot, card, dealer and Hero-stack regions against the correctly cropped classic-deck client;
+- card OCR now starts from the full card ROI and internally crops its upper-left rank corner;
+- six threshold passes for each rank;
+- opponent stacks are kept separate from posted blind amounts;
+- 3-max requires two plausible opponent stack reads;
+- missing ranks remain blank instead of being guessed.
+
+Reference target:
+K♠ J♥, 3-max, BTN, Hero 300, left 290, right 280,
+current blinds 10/20, next 15/30, pot 30, posts 10/20.
+
+Browser-side heuristic CV/OCR; not a trained custom vision model.
 For completed-hand/training review.
