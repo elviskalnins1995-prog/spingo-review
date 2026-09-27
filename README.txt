@@ -1,20 +1,17 @@
-SpinGo Photo Review v11
+SpinGo Photo Review v12
 
-Main change:
-The OCR regions are no longer tied to the full phone photograph.
+Fixes based on the user's v11 screenshot:
+- v11 was not actually isolating the poker client; the normalized canvas still contained most of the phone photograph.
+- v12 detects a large dark poker-client rectangle and scores candidates by dark-content fraction.
+- Aspect-ratio acceptance is widened for photographed/windowed clients.
+- JS fallback now searches dark horizontal/vertical bands instead of percentile bounds.
+- Classic white-card rank ROIs are tightened to the upper-left rank glyphs.
+- Current blind parser tolerates OCR variants of 'Blinds 10 | 20'.
+- If the detected crop is nearly the whole photo, v12 warns instead of silently treating it as a good crop.
 
-Pipeline:
-1. Detect a large poker/application window in the photo.
-2. Crop it.
-3. Normalize the crop to 1200x760.
-4. Read cards, title/blinds, stacks, bets, pot and dealer button from normalized coordinates.
-5. Use multiple threshold passes and majority voting.
-6. Do not guess fields that fail confidence checks.
+Reference target from the supplied classic-deck photo:
+K♠ J♥, 3-max, BTN, Hero 300, opponents 290/280, current blinds 10/20,
+next blinds 15/30, pot 30, posted bets 10/20.
 
-Calibrated for the classic white 2-colour card style shown in the supplied reference photo.
-
-Important:
-- OpenCV.js and Tesseract.js are loaded from HTTPS CDNs, so the GitHub Pages site needs internet access.
-- This is a browser-side heuristic reader, not a trained custom computer-vision model.
-- If a field cannot be read reliably, v11 leaves it for manual correction instead of fabricating a value.
-- Intended for completed-hand / training review.
+This remains browser-side heuristic CV/OCR, not a trained custom vision model.
+For completed-hand/training review.

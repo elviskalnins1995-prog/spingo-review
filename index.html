@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v11</title>
+<title>SpinGo Photo Review v12</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,8 +20,8 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v11</h1>
-<p class="muted">v11 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v12</h1>
+<p class="muted">v12 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -82,8 +82,8 @@ const B={
  rightBet:[.715,.315,.085,.09],
  pot:[.405,.315,.20,.075],
  dealer:[.405,.655,.09,.09],
- card1:[.420,.690,.070,.135],
- card2:[.485,.690,.070,.135],
+ card1:[.432,.704,.030,.060],
+ card2:[.493,.704,.030,.060],
  heroStack:[.425,.815,.17,.12],
  actions:[.585,.785,.41,.205]
 };
@@ -123,47 +123,87 @@ async function normalizePokerWindow(){
  let q=normCanvas.getContext("2d");
  if(rect){
    q.drawImage(src,rect.x,rect.y,rect.w,rect.h,0,0,1200,760);
-   status.textContent=`✓ Pokera logs atrasts: ${Math.round(rect.w)}×${Math.round(rect.h)} px. Normalizēts uz 1200×760.`;
+   status.textContent=`✓ Pokera klients atrasts: ${Math.round(rect.w)}×${Math.round(rect.h)} px (attēla daļa ${(100*rect.w*rect.h/(src.width*src.height)).toFixed(0)}%). Normalizēts OCR analīzei.`;
  }else{
    q.drawImage(src,0,0,src.width,src.height,0,0,1200,760);
    status.textContent="⚠ Loga robežu nevarēju droši atrast — izmantoju visu attēlu.";
  }
  normCard.classList.remove("hide");
+ if(rect && rect.w*rect.h > src.width*src.height*.82){
+   status.textContent += "\n⚠ Atrastais reģions ir gandrīz viss foto — OCR rezultāti var būt nepareizi.";
+ }
  await analyzeNormalized();
 }
 
 function detectWindow(canvas){
- let src=cv.imread(canvas), gray=new cv.Mat(), edges=new cv.Mat(), contours=new cv.MatVector(), hierarchy=new cv.Mat();
+ // v12: detect the dark poker CLIENT, not the whole phone photograph.
+ // The previous 1.15–2.1 aspect-ratio filter could reject a photographed/windowed client.
+ let src=cv.imread(canvas), gray=new cv.Mat(), mask=new cv.Mat(), closed=new cv.Mat();
+ let contours=new cv.MatVector(), hierarchy=new cv.Mat();
+
  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
- cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
- cv.Canny(gray,edges,45,130);
- cv.findContours(edges,contours,hierarchy,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
- let best=null, areaMin=canvas.width*canvas.height*.12;
+ // Poker client is a large dark rectangle. Threshold first, then join table/title areas.
+ cv.threshold(gray,mask,105,255,cv.THRESH_BINARY_INV);
+ let k=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(31,15));
+ cv.morphologyEx(mask,closed,cv.MORPH_CLOSE,k);
+ cv.findContours(closed,contours,hierarchy,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+
+ let best=null,bestScore=-1,W=canvas.width,H=canvas.height,total=W*H;
  for(let i=0;i<contours.size();i++){
-   let c=contours.get(i), r=cv.boundingRect(c), area=r.width*r.height, ratio=r.width/r.height;
-   if(area>areaMin && ratio>1.15 && ratio<2.1){
-     if(!best || area>best.w*best.h) best={x:r.x,y:r.y,w:r.width,h:r.height};
+   let c=contours.get(i),r=cv.boundingRect(c); c.delete();
+   let area=r.width*r.height, ratio=r.width/r.height;
+   if(area<total*.10 || area>total*.88 || ratio<1.15 || ratio>3.8)continue;
+
+   // Sample darkness inside candidate. Real poker client should be mostly dark/green,
+   // while a crop containing Windows/ChatGPT background scores much worse.
+   let dark=0,n=0,step=Math.max(4,Math.round(Math.min(r.width,r.height)/70));
+   let q=canvas.getContext("2d"),data=q.getImageData(r.x,r.y,r.width,r.height).data;
+   for(let y=0;y<r.height;y+=step)for(let x=0;x<r.width;x+=step){
+     let j=(y*r.width+x)*4,lum=.299*data[j]+.587*data[j+1]+.114*data[j+2];
+     if(lum<135)dark++; n++;
    }
-   c.delete();
+   let darkFrac=dark/Math.max(1,n);
+   let score=(area/total)*2.0 + darkFrac*2.8 - Math.abs(ratio-1.55)*.12;
+   if(darkFrac>.48 && score>bestScore){bestScore=score;best={x:r.x,y:r.y,w:r.width,h:r.height,score}}
  }
- src.delete();gray.delete();edges.delete();contours.delete();hierarchy.delete();
+ src.delete();gray.delete();mask.delete();closed.delete();k.delete();contours.delete();hierarchy.delete();
  return best;
 }
 
 function darkWindowBounds(canvas){
- // Finds a large dark rectangular application region. This is deliberately conservative.
- let q=canvas.getContext("2d"), W=canvas.width,H=canvas.height,d=q.getImageData(0,0,W,H).data;
- let step=Math.max(4,Math.round(Math.min(W,H)/300)), xs=[],ys=[];
- for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step){
-   let i=(y*W+x)*4, lum=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-   if(lum<75){xs.push(x);ys.push(y)}
+ // JS fallback: search horizontal bands for a wide, continuously dark application region.
+ // This avoids percentile bounds that could accidentally include unrelated desktop areas.
+ let q=canvas.getContext("2d"),W=canvas.width,H=canvas.height;
+ let small=document.createElement("canvas"),sw=240,sh=Math.max(120,Math.round(H/W*sw));
+ small.width=sw;small.height=sh;small.getContext("2d").drawImage(canvas,0,0,sw,sh);
+ let d=small.getContext("2d").getImageData(0,0,sw,sh).data;
+ let row=[];
+ for(let y=0;y<sh;y++){
+   let dark=0;
+   for(let x=0;x<sw;x++){let i=(y*sw+x)*4,lum=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(lum<120)dark++}
+   row[y]=dark/sw;
  }
- if(xs.length<500)return null;
- xs.sort((a,b)=>a-b);ys.sort((a,b)=>a-b);
- let p=(a,f)=>a[Math.floor((a.length-1)*f)];
- let x1=p(xs,.03),x2=p(xs,.97),y1=p(ys,.03),y2=p(ys,.97);
- if((x2-x1)*(y2-y1)<W*H*.12)return null;
- return {x:x1,y:y1,w:x2-x1,h:y2-y1};
+ let runs=[],a=null;
+ for(let y=0;y<=sh;y++){
+   if(y<sh&&row[y]>.48){if(a===null)a=y}
+   else if(a!==null){if(y-a>sh*.16)runs.push([a,y-1]);a=null}
+ }
+ if(!runs.length)return null;
+ let best=runs.sort((A,B)=>(B[1]-B[0])-(A[1]-A[0]))[0],y1=best[0],y2=best[1];
+
+ // Within selected vertical band find columns that are mostly dark.
+ let col=[];
+ for(let x=0;x<sw;x++){
+   let dark=0,n=0;
+   for(let y=y1;y<=y2;y++){let i=(y*sw+x)*4,lum=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(lum<135)dark++;n++}
+   col[x]=dark/n;
+ }
+ let xs=[];for(let x=0;x<sw;x++)if(col[x]>.45)xs.push(x);
+ if(xs.length<sw*.35)return null;
+ let x1=Math.min(...xs),x2=Math.max(...xs);
+ // modest padding to retain title bar and action buttons
+ let padX=3,padY=3;x1=Math.max(0,x1-padX);x2=Math.min(sw-1,x2+padX);y1=Math.max(0,y1-padY);y2=Math.min(sh-1,y2+padY);
+ return {x:x1/sw*W,y:y1/sh*H,w:(x2-x1)/sw*W,h:(y2-y1)/sh*H};
 }
 
 function useFullImage(){
@@ -244,7 +284,7 @@ async function analyzeNormalized(){
 
   // Current blinds come from title "Blinds 10 | 20"; next blinds only from "Next Blinds".
   let tt=(title.value||"").replace(/\s+/g," ");
-  let bm=tt.match(/BLINDS?\D{0,8}(\d{1,3})\D+(\d{1,3})/i);
+  let bm=tt.match(/BL[I1L]NDS?\D{0,12}(\d{1,3})\D+(\d{1,3})/i) || tt.match(/(\d{1,3})\s*[|\/]\s*(\d{1,3})/);
   blinds.value=bm?bm[1]+"/"+bm[2]:"";
   let nt=(next.value||"").replace(/\s+/g," ");
   let nm=nt.match(/NEXT\s*BLINDS?\D{0,8}(\d{1,3})\D+(\d{1,3})/i);
@@ -261,7 +301,7 @@ async function analyzeNormalized(){
   ];
   let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v11 apzināti neatmin trūkstošos laukus.`:
+   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v12 apzināti neatmin trūkstošos laukus.`:
    `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
