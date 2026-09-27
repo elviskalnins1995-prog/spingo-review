@@ -1,18 +1,11 @@
-SpinGo Photo Review v15
+SpinGo Photo Review v17
 
-Based on the v14 test screenshot:
-WORKING: poker-window crop, 3-max, BTN, Hero 300, opponents 290/280,
-10/20, next 15/30, pot 30, posts 10/20.
-BROKEN IN v14: Hero hand was blank although K♠ J♥ is clearly visible.
+Changes:
+- Diagnostics is permanently expanded; no click required.
+- Analysis progress appears immediately.
+- A prominent 'Labākā darbība' block is always visible and updates automatically after OCR.
+- If the hand is not confidently read, the app says CHECK HAND instead of inventing an action.
+- Includes a compact preflop study baseline using hand class, position, effective stack, blinds and detected bets.
+- It does not claim solver/GTO precision where no actual solver chart database is embedded.
 
-Root cause addressed:
-v14 cropped a fixed fraction of each card and could cut through the rank glyph.
-v15 takes a larger full-card region, finds the dark/red printed ink inside the
-upper-left quadrant, builds a rank crop from the actual pixels, and then OCRs that
-crop with multiple segmentation modes plus 8 threshold passes.
-
-v15 no longer blanks a rank just because consensus is imperfect; it reports low
-confidence instead. Different red/black card colors yield offsuit automatically.
-
-Reference target: KJo.
 For completed-hand/training review.

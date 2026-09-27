@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v15</title>
+<title>SpinGo Photo Review v17</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,8 +20,8 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v15</h1>
-<p class="muted">v15 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v17</h1>
+<p class="muted">v17 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -60,7 +60,13 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </section>
 
 <section class="card">
-<details><summary>Diagnostika</summary>
+
+<section class="card" id="bestActionCard">
+  <h2>3. Labākā darbība</h2>
+  <div id="bestAction" style="font-size:2rem;font-weight:800;margin:.35rem 0">ANALIZĒJU…</div>
+  <div id="bestActionWhy" class="muted">Tiklīdz situācija ir nolasīta, šeit automātiski parādīsies ieteiktā darbība.</div>
+</section>
+<details open><summary>Diagnostika</summary>
 <div id="diag" class="status">—</div>
 <canvas id="debug"></canvas>
 </details>
@@ -288,31 +294,27 @@ function isolateRank(full){
  return c;
 }
 async function cardRankOCR(name){
- let full=crop(name,10), rankImg=isolateRank(full);
+ let full=crop(name,7), rankImg=isolateRank(full);
  if(!rankImg)return {value:null,raw:"rank isolation failed",votes:0};
 
+ // Mobile-safe: only three complementary passes. v15 could launch >60 OCR jobs
+ // for one photo and stall before the result panel was updated.
+ let tests=[
+   [rankImg,"10","orig"],
+   [prep(rankImg,145),"10","th145"],
+   [prep(rankImg,190),"10","th190"]
+ ];
  let vals=[],raw=[];
- // Use both original grayscale/color crop and threshold variants.
- for(let psm of ["10","7","6"]){
-   let t=await tess(rankImg,"AKQJT23456789",psm);
-   raw.push("orig/"+psm+":"+t);
-   t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
-   if(t.length===1)vals.push(t);
+ for(let [img,psm,label] of tests){
+   let t=await tess(img,"AKQJT23456789",psm);
+   raw.push(label+":"+t);
+   let v=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
+   if(v.length===1)vals.push(v);
  }
- for(let th of [90,110,130,150,170,190,210,230]){
-   let t=await tess(prep(rankImg,th),"AKQJT23456789","10");
-   raw.push(th+":"+t);
-   t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
-   if(t.length===1)vals.push(t);
- }
- let count={};vals.forEach(v=>count[v]=(count[v]||0)+1);
+ if(!vals.length)return {value:null,raw:raw.join(" | "),votes:0};
+ let count={}; vals.forEach(v=>count[v]=(count[v]||0)+1);
  let ordered=Object.keys(count).sort((x,y)=>count[y]-count[x]);
- let value=ordered[0]||null,votes=value?count[value]:0;
-
- // Confidence rule: consensus required, but don't blank a rank merely because one
- // threshold disagrees. This is what caused v14 to return an empty hand.
- if(votes<2 && vals.length)value=vals[0],votes=1;
- return {value,raw:raw.join(" | "),votes};
+ return {value:ordered[0],raw:raw.join(" | "),votes:count[ordered[0]]};
 }
 
 function cardSuit(name){
@@ -328,14 +330,55 @@ function cardSuit(name){
  // Color determines red vs black; exact suit symbol OCR is intentionally not guessed.
  return red>black*.30 ? "red" : "black";
 }
+
+function setBestAction(text, why){
+ const a=document.getElementById("bestAction"), w=document.getElementById("bestActionWhy");
+ if(a)a.textContent=text||"PĀRBAUDI DATUS";
+ if(w)w.textContent=why||"Nepietiek droši nolasītu datu.";
+}
+function quickStudyAction(handStr, playerCount, position, heroChips, blindText, leftBet, rightBet){
+ // Compact study baseline, not a live solver. Uses normalized preflop hand class,
+ // position and effective stack. It never fabricates a decision when hand is missing.
+ if(!handStr || handStr.length<2)return ["PĀRBAUDI HANDU","Kārtis nav droši nolasītas, tāpēc darbība netiek minēta."];
+ let m=(blindText||"").match(/(\d+)\D+(\d+)/), bb=m?+m[2]:0;
+ let eff=bb?heroChips/bb:99;
+ let h=handStr.toUpperCase().replace(/[^AKQJT2-9SO]/g,"");
+ let r1=h[0],r2=h[1],pair=r1===r2, suited=h.endsWith("S");
+ const val={A:14,K:13,Q:12,J:11,T:10,9:9,8:8,7:7,6:6,5:5,4:4,3:3,2:2};
+ let hi=Math.max(val[r1]||0,val[r2]||0),lo=Math.min(val[r1]||0,val[r2]||0);
+ let premium=pair&&hi>=10 || hi===14&&lo>=11 || hi===13&&lo>=12;
+ let strong=pair&&hi>=7 || hi===14&&lo>=9 || hi===13&&lo>=10 || (suited&&hi>=12&&lo>=9);
+ let playable=pair || hi===14 || (hi>=13&&lo>=8) || (suited&&hi>=11&&lo>=7);
+ let facing=Math.max(+leftBet||0,+rightBet||0);
+ if(eff<=6){
+   if(premium||strong||pair||(hi===14&&lo>=7)) return ["ALL-IN","Īss efektīvais stacks; šī handa klase ietilpst agresīvajā push baseline."];
+   return ["FOLD","Īss stacks, bet handa klase nav pietiekami stipra šim push baseline."];
+ }
+ if(facing>bb && bb){
+   if(premium)return ["ALL-IN","Spēcīga preflop handa klase pret jau esošu raise."];
+   if(strong)return ["CALL / RAISE","Spēcīga handa klase; precīzs mix ir atkarīgs no raise izmēra un efektīvā stacka."];
+   return ["FOLD","Pret jau esošu raise šī baseline handa klase netiek turpināta."];
+ }
+ if(position==="BTN" || position==="BTN/SB"){
+   if(premium||strong)return ["RAISE","BTN first-in: spēcīga handa klase agresīvam open."];
+   if(playable)return ["RAISE / LIMP","BTN first-in: spēlējama handa klase; baseline izmanto jauktu open stratēģiju."];
+   return ["FOLD / LIMP","Robežhanda BTN first-in; bez precīzas chart datubāzes netiek dots viltus GTO procents."];
+ }
+ if(premium)return ["RAISE / ALL-IN","Premium handa klase no šīs pozīcijas."];
+ if(strong)return ["RAISE","Spēcīga preflop handa klase."];
+ if(playable)return ["CALL / RAISE","Spēlējama handa klase; izvēle atkarīga no iepriekšējās darbības."];
+ return ["FOLD","Vāja preflop handa klase šajā baseline."];
+}
 async function analyzeNormalized(){
- status.textContent="Nolasu normalizēto galdu…";
+ status.textContent="Nolasu galdu…";
+ result.classList.remove("hide");
+ confidence.innerHTML='<span class="warn">Notiek analīze…</span>'; setBestAction("ANALIZĒJU…","Nolasu handu, pozīciju, stackus, blindus un darbību.");
+ diag.textContent="Sāku OCR…";
  try{
-  let [title,next,c1,c2,hs,ls,rs,lb,rb,pv]=await Promise.all([
+  // First read the fields that already worked reliably in v13/v14.
+  let [title,next,hs,ls,rs,lb,rb,pv]=await Promise.all([
     voteOCR("title","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.-|/ ",t=>t,"6"),
     voteOCR("next","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/ ",t=>t,"6"),
-    cardRankOCR("card1"),
-    cardRankOCR("card2"),
     voteOCR("heroStack","0123456789",num(20,2000)),
     voteOCR("leftStack","0123456789",num(20,2000)),
     voteOCR("rightStack","0123456789",num(20,2000)),
@@ -343,6 +386,10 @@ async function analyzeNormalized(){
     voteOCR("rightBet","0123456789",num(1,300)),
     voteOCR("pot","0123456789",num(1,3000))
   ]);
+  status.textContent="Pamatlauki nolasīti. Nolasu 1. kārti…";
+  let c1=await cardRankOCR("card1");
+  status.textContent="1. kārts: "+(c1.value||"?")+". Nolasu 2. kārti…";
+  let c2=await cardRankOCR("card2");
 
   // Cards: rank OCR + red/black suit class. Same color alone is not enough for suitedness,
   // so v11 reports ranks confidently and only marks s/o when suit identity is unambiguous.
@@ -351,6 +398,10 @@ async function analyzeNormalized(){
   // Different red/black colors guarantee offsuit. Same color could still be different suits,
   // so v14 refuses to invent "s" in that case.
   hand.value=(r1&&r2)?(r1+r2+(r1!==r2 && col1!==col2?"o":"")):"";
+  setTimeout(()=>{
+    let rec=quickStudyAction(hand.value,players.value,pos.value,+hero.value,currentBlinds.value,+leftBet.value,+rightBet.value);
+    setBestAction(rec[0],rec[1]);
+  },0);
 
   hero.value=hs.value||"";oppL.value=ls.value||"";oppR.value=rs.value||"";
   betL.value=lb.value||"";betR.value=rb.value||"";pot.value=pv.value||"";
@@ -382,7 +433,7 @@ async function analyzeNormalized(){
   if(rs.value && rb.value && +rs.value===+rb.value){oppR.value="";rs.value=null}
   let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v15 apzināti neatmin trūkstošos laukus.`:
+   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v17 apzināti neatmin trūkstošos laukus.`:
    `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
@@ -404,7 +455,7 @@ POT => ${pv.value} [${pv.raw}]
 DEALER yellow ratio => ${yr.toFixed(5)}`;
 
   drawDebug();result.classList.remove("hide");status.textContent="✓ Galda normalizēšana + OCR pabeigta.";
- }catch(e){status.textContent="Analīzes kļūda: "+e.message}
+ }catch(e){result.classList.remove("hide");status.textContent="Analīzes kļūda: "+e.message;diag.textContent="ERROR: "+(e&&e.stack?e.stack:e);setBestAction("PĀRBAUDI DATUS","Analīze apstājās ar kļūdu; detalizācija redzama uzreiz zemāk.")}
 }
 function drawDebug(){
  let c=debug,q=c.getContext("2d");c.width=1200;c.height=760;q.drawImage(normCanvas,0,0);
