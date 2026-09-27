@@ -1,5 +1,15 @@
-SpinGo Photo Study v6
-Vienīgā ārējā ievade ir foto. Nav JSON/range importa.
-Iebūvēti publiski verificēti 3-max Spin & Go opening-range dati 8/10/15bb BTN/SB.
-20/25bb un response spotos aplikācija neizdomā hand-level GTO frequencies, ja tās nav lokāli iebūvētas.
-Paredzēts pabeigtu handu un treniņa spotu review.
+SpinGo Photo Review v7
+
+- Paredzēts pabeigtu handu / treniņa spotu analīzei.
+- Pēc foto OCR sākas automātiski.
+- Ja OCR iegūst visus nepieciešamos laukus, review parādās automātiski.
+- Ja kāds lauks nav drošs, tiek prasīts izlabot tikai trūkstošo.
+- Nav JSON importa.
+- Nav paštaisīta hand-strength score.
+- Hand-level darbība tiek rādīta tikai mezglos, kuros aplikācijā ir iebūvēts publiski pārbaudāms range.
+- BB vs BTN/SB shove guideline ranges ir iebūvēti 10/15/25bb.
+- BTN 10bb un SB 20bb RFI izmanto publiskās pure-open robežas; mixed sizing netiek izdomāts.
+
+Avotu pamats:
+PreflopRanges.app Spin & Go solved charts
+PokerStars Learn: Three-Handed Preflop in the Big Blind

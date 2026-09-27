@@ -1,25 +1,135 @@
-<!doctype html><html lang="lv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><title>SpinGo Photo Study v6</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:740px;margin:auto;padding:16px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}.muted{color:#9db0bf;line-height:1.45}.camera{display:block;text-align:center;padding:25px;border-radius:17px;background:#285f8b;border:2px solid #80c4f6;font-size:23px;font-weight:900;cursor:pointer}input[type=file]{display:none}#preview{display:none;width:100%;max-height:55vh;object-fit:contain;background:#03070a;border-radius:14px;margin-top:12px}.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:block;color:#9db0bf;font-size:12px;margin:8px 0 4px}input,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:white;font-size:15px}button{font-weight:850}.hide{display:none}.result{text-align:center;padding:20px;background:#09131c;border:1px solid #49657d;border-radius:15px}.action{font-size:34px;font-weight:950;color:#f0c85d;margin:8px}.ctx{font-size:18px;font-weight:750}@media(max-width:520px){.grid{grid-template-columns:1fr}}</style></head><body><main>
-<h1>📷 Spin & Go Photo Study v6</h1><p class=muted>Vienīgā ievade ir foto. OCR sākas automātiski. Ja kāds lauks nav droši nolasīts, pārbaudi to pirms pabeigta handa / treniņa review.</p>
-<section class=card><label class=camera>📷 BILDĒT<input id=photo type=file accept="image/*" capture="environment"></label><img id=preview><div id=status class=status>Gaida foto.</div></section>
-<section id=check class="card hide"><h3>Atpazītā situācija</h3><div class=grid><div><label>Hero hand</label><input id=hand placeholder="AJs / 88 / KQo"></div><div><label>Pozīcija</label><select id=pos><option>BTN</option><option>SB</option><option>BB</option></select></div><div><label>Hero stack</label><input id=hero type=number value=300></div><div><label>Opp 1</label><input id=o1 type=number value=300></div><div><label>Opp 2</label><input id=o2 type=number value=300></div><div><label>Blinds</label><select id=blinds><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div></div><label>Previous action</label><select id=prev><option>FIRST-IN</option><option>FOLD</option><option>CALL/LIMP</option><option>MIN-RAISE</option><option>3x RAISE</option><option>ALL-IN</option></select><label style="font-size:14px"><input id=finished type=checkbox style="width:auto"> Apstiprinu: pabeigts hands / treniņa spots</label><br><br><button onclick=review()>PARĀDĪT RANGE REVIEW</button></section>
-<section id=out class="card hide"><div class=result><div id=action class=action>—</div><div id=ctx class=ctx></div><p id=why class=muted></p></div></section>
+<!doctype html>
+<html lang="lv"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019"><title>SpinGo Photo Review v7</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:760px;margin:auto;padding:16px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
+.camera{display:block;text-align:center;padding:25px;border-radius:17px;background:#285f8b;border:2px solid #80c4f6;font-size:23px;font-weight:900;cursor:pointer}
+input[type=file]{display:none}#preview{display:none;width:100%;max-height:50vh;object-fit:contain;background:#03070a;border-radius:14px;margin-top:12px}
+.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.muted{color:#9db0bf;line-height:1.45}
+.result{text-align:center;background:#09131c;border:1px solid #49657d;border-radius:15px;padding:22px}.action{font-size:38px;font-weight:950;color:#f0c85d;margin:8px}
+.freq{font-size:18px;font-weight:800}.hide{display:none}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;color:#9db0bf;font-size:12px;margin:8px 0 4px}input.manual,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:#fff;font-size:15px}
+button{font-weight:850;cursor:pointer}.good{color:#55d792}.warn{color:#f0c85d}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>📷 Spin & Go Photo Review v7</h1>
+<p class=muted>Pabeigta handa / treniņa spota foto. Pēc foto OCR sākas automātiski un, ja visi nepieciešamie lauki ir atpazīti, review parādās bez papildu pogas.</p>
+
+<section class=card>
+<label class=camera>📷 BILDĒT<input id=photo type=file accept="image/*" capture="environment"></label>
+<img id=preview><div id=status class=status>Gaida foto.</div>
+</section>
+
+<section id=out class="card hide"><div class=result>
+<div id=action class=action>—</div><div id=freq class=freq></div><div id=spot></div><p id=why class=muted></p>
+</div></section>
+
+<section id=fix class="card hide"><h3>Nepieciešama pārbaude</h3>
+<p class=muted>OCR nevar droši saprast grafiskas kārtis vai action tikai no parasta teksta. Izlabo tikai trūkstošos laukus; review pārrēķināsies.</p>
+<div class=grid>
+<div><label>Hero hand</label><input class=manual id=hand placeholder="AJs / 88 / KQo"></div>
+<div><label>Pozīcija</label><select id=pos><option value="">—</option><option>BTN</option><option>SB</option><option>BB</option></select></div>
+<div><label>Hero stack</label><input class=manual id=hero type=number></div>
+<div><label>Opp 1 stack</label><input class=manual id=o1 type=number></div>
+<div><label>Opp 2 stack</label><input class=manual id=o2 type=number></div>
+<div><label>Blinds</label><select id=blinds><option value="">—</option><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div>
+</div>
+<label>Spots</label><select id=node><option value="">—</option><option value="FIRST-IN">First-in / RFI</option><option value="VS_BTN_JAM">BB vs BTN shove</option><option value="VS_SB_JAM">BB vs SB shove</option></select>
+<button onclick=tryReview()>PĀRRĒĶINĀT REVIEW</button>
+</section>
+
 <section class=card><details><summary>OCR diagnostika</summary><div id=ocr class=status>—</div></details></section>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
-const R="AKQJT98765432";let file=null;
-const charts={
-"BTN|8":{pure:"22+,A2s+,K4s+,Q8s+,J8s+,T7s+,97s+,86s+,76s+,65s+,A2o+,K9o+,QTo+,JTo+",act:"ALL-IN",summary:"BTN 8bb: all-in 34.3%, fold 65.7%"},
-"BTN|10":{pure:"22+,A2s+,K4s+,Q7s+,J7s+,T8s+,98s+,87s+,A2o+,KTo+,QTo+,JTo+",act:"OPEN",summary:"BTN 10bb: all-in 26.6%, raise 2bb 7.5%, fold 65.9%"},
-"BTN|15":{pure:"22+,A3s+,K5s+,Q7s+,J8s+,T7s+,97s+,87s+,A6o+,K9o+,QTo+,JTo+",act:"OPEN",summary:"BTN 15bb: plays 32.1%, 2bb raise + jam tree"},
-"SB|8":{pure:"88-22,A2s+,K7s+,K5s-K2s,Q9s,Q6s-Q2s,J7s-J4s,T8s-T6s,97s-96s,85s+,74s+,64s+,54s+,A2o+,K2o+,Q7o+,J9o+,T9o+",act:"ALL-IN",summary:"SB 8bb: all-in 52.6%, raise 6.0%, limp 6.5%, fold 35.0%"},
-"SB|10":{pure:"66-22,KK+,AQs-A5s,A3s-A2s,K9s-K7s,K4s-K2s,Q6s-Q5s,J9s-J7s,J5s,T8s-T7s,T4s,96s+,85s+,75s+,65s+,54s+,A2o+,K3o+,Q8o+,JTo+,T9o+",act:"OPEN",summary:"SB 10bb: all-in 41.7%, raise 2bb 16.5%, limp 0.8%, fold 41.0%"},
-"SB|15":{pure:"44-22,TT+,AQs+,K9s+,QTs,JTs+,T9s+,T7s,T4s,97s+,86s+,76s+,AJo-A2o,KJo,K7o",act:"OPEN",summary:"SB 15bb: all-in 19.5%, raise 2.2bb 26.5%, limp 16%, fold 38%"}
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const R="AKQJT98765432"; let file=null;
+
+// Conservative embedded study references. Exact hand-level action is only emitted
+// where the public source gives a textual pure range/guideline.
+const DATA={
+ "BTN|FIRST-IN|10":{range:"22+,A2s+,K4s+,Q7s+,J7s+,T8s+,98s+,87s+,A2o+,KTo+,QTo+,JTo+",action:"OPEN",summary:"10bb BTN overall: all-in 26.6% · raise 2bb 7.5% · fold 65.9%"},
+ "SB|FIRST-IN|20":{range:"44-22,88+,A7s+,K9s+,JTs+,T9s+,95s,A9o-A8o,A6o,K6o",action:"OPEN",summary:"20bb SB overall: all-in 7.4% · raise 2.5bb 33.9% · limp 22.8% · fold 35.9%"},
+ "BB|VS_BTN_JAM|10":{range:"22+,A3o+,A2s+,K9s+,KTo+,QJo+,JTs+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 10bb"},
+ "BB|VS_BTN_JAM|15":{range:"33+,A4s+,A8o+,JTs+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 15bb"},
+ "BB|VS_BTN_JAM|25":{range:"44+,A8s+,ATo+,KQ+",action:"CALL",summary:"Public GTO guideline: BB call vs BTN open-shove at 25bb"},
+ "BB|VS_SB_JAM|10":{range:"22+,A2o+,A2s+,K2s+,K6o+,J8s+,JTo+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 10bb"},
+ "BB|VS_SB_JAM|15":{range:"22+,A2s+,A4o+,J9s+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 15bb"},
+ "BB|VS_SB_JAM|25":{range:"33+,A6s+,ATo+,KTs+",action:"CALL",summary:"Public GTO guideline: BB call vs SB open-shove at 25bb"}
 };
-photo.onchange=async e=>{file=e.target.files?.[0];if(!file)return;preview.src=URL.createObjectURL(file);preview.style.display="block";status.textContent="Foto saņemts — analizēju…";await scan()};
-async function scan(){try{let r=await Tesseract.recognize(file,"eng",{logger:m=>{if(m.status)status.textContent=m.status+" "+Math.round((m.progress||0)*100)+"%"}}),t=r.data.text||"";ocr.textContent=t||"Teksts netika atrasts.";detect(t);status.textContent="✓ OCR pabeigts. Pārbaudi atpazīto situāciju."}catch(e){status.textContent="OCR kļūda: "+e.message}check.classList.remove("hide");check.scrollIntoView({behavior:"smooth"})}
-function detect(t){let c=t.toUpperCase().replace(/\s+/g," "),ls=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"],l=ls.find(x=>c.replace(/\s/g,"").includes(x));if(l)blinds.value=l;if(/\bBUTTON\b|\bBTN\b/.test(c))pos.value="BTN";else if(/\bSB\b/.test(c))pos.value="SB";else if(/\bBB\b/.test(c))pos.value="BB";let m=c.match(/\b(A|K|Q|J|T|[2-9])\s*(A|K|Q|J|T|[2-9])\s*([SO])?\b/);if(m)hand.value=m[1]+m[2]+(m[1]===m[2]?"":(m[3]||"").toLowerCase());let ns=[...c.matchAll(/\b(\d{2,4})\b/g)].map(x=>+x[1]).filter(x=>x>=20&&x<=1500);if(ns.length>=3){hero.value=ns[0];o1.value=ns[1];o2.value=ns[2]}if(pos.value==="BTN")prev.value="FIRST-IN"}
+
+photo.onchange=async e=>{
+ file=e.target.files?.[0]; if(!file)return;
+ preview.src=URL.createObjectURL(file); preview.style.display="block";
+ out.classList.add("hide"); fix.classList.add("hide");
+ status.textContent="Foto saņemts — OCR sākas automātiski…";
+ await scan();
+};
+
+async function scan(){
+ try{
+  const r=await Tesseract.recognize(file,"eng",{logger:m=>{
+   if(m.status)status.textContent=m.status+" "+Math.round((m.progress||0)*100)+"%";
+  }});
+  const t=r.data.text||""; ocr.textContent=t||"Teksts netika atrasts.";
+  detect(t); status.textContent="✓ OCR pabeigts.";
+ }catch(e){status.textContent="OCR kļūda: "+e.message}
+ tryReview(true);
+}
+
+function detect(t){
+ const c=t.toUpperCase().replace(/\s+/g," ");
+ const levels=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"];
+ const l=levels.find(x=>c.replace(/\s/g,"").includes(x)); if(l)blinds.value=l;
+ if(/\bBUTTON\b|\bBTN\b/.test(c))pos.value="BTN"; else if(/\bSB\b/.test(c))pos.value="SB"; else if(/\bBB\b/.test(c))pos.value="BB";
+ const hm=c.match(/\b(A|K|Q|J|T|[2-9])\s*(A|K|Q|J|T|[2-9])\s*([SO])?\b/);
+ if(hm)hand.value=hm[1]+hm[2]+(hm[1]===hm[2]?"":(hm[3]||"").toLowerCase());
+ const ns=[...c.matchAll(/\b(\d{2,4})\b/g)].map(x=>+x[1]).filter(x=>x>=20&&x<=1500);
+ if(ns.length>=3){hero.value=ns[0];o1.value=ns[1];o2.value=ns[2]}
+ if(pos.value==="BTN")node.value="FIRST-IN";
+}
+
 function norm(h){h=(h||"").trim();return /^[AKQJT2-9]{2}[soSO]?$/.test(h)?h.slice(0,2).toUpperCase()+h.slice(2).toLowerCase():""}
-function tok(h,t){if(t.endsWith("+")){let b=t.slice(0,-1);if(b.length===2&&b[0]===b[1])return h.length===2&&R.indexOf(h[0])<=R.indexOf(b[0]);if(b.length>=2&&h.length===3&&h[0]===b[0]&&h[2]===b[2])return R.indexOf(h[1])<=R.indexOf(b[1])}if(t.includes("-")){let [x,y]=t.split("-");if(h.length===2&&x.length===2&&y.length===2)return R.indexOf(h[0])>=Math.min(R.indexOf(x[0]),R.indexOf(y[0]))&&R.indexOf(h[0])<=Math.max(R.indexOf(x[0]),R.indexOf(y[0]));if(h.length===3&&x.length===3&&y.length===3&&h[0]===x[0]&&h[2]===x[2])return R.indexOf(h[1])>=Math.min(R.indexOf(x[1]),R.indexOf(y[1]))&&R.indexOf(h[1])<=Math.max(R.indexOf(x[1]),R.indexOf(y[1]))}return h.toUpperCase()===t.toUpperCase()}
-function inside(h,s){return s.split(",").some(t=>tok(h,t.trim()))}function dep(x){return[8,10,15,20,25].reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a)}
-function review(){if(!finished.checked){alert("Apstiprini pabeigtu handu / treniņa spotu.");return}let h=norm(hand.value);if(!h){alert("Pārbaudi Hero handu.");return}let bb=+blinds.value.split("/")[1],eff=Math.min(+hero.value||0,+o1.value||0,+o2.value||0)/bb,p=pos.value,d=dep(eff),pa=p==="BTN"?"FIRST-IN":prev.value,c=charts[p+"|"+d];ctx.textContent=`${h} · ${p} · ${eff.toFixed(1)} BB → ${d}bb reference · ${pa}`;if(pa!=="FIRST-IN"){action.textContent="NAV IEBŪVĒTU RESPONSE DATU";why.textContent="Šajā versijā iebūvēti verificētie publiskie opening ranges; response action konkrētajai rokai netiek minēts."}else if(c){if(inside(h,c.pure)){action.textContent=c.act==="ALL-IN"?"ALL-IN (PURE RANGE)":"100% OPEN RANGE";why.textContent=c.summary+" · konkrētais action mix var būt jaukts, ja avots publicē vairākus sizingus."}else{action.textContent="NAV PURE RANGE";why.textContent=c.summary+" · roka nav publicētajā 100% opening daļā; bez hand-level frequency aplikācija action neizdomā."}}else{action.textContent="NAV HAND-LEVEL DATU";why.textContent="Šim 20/25bb reference spotam publiskais aggregate solve ir zināms, bet konkrētās rokas frequency šajā lokālajā versijā nav iebūvēta."}out.classList.remove("hide");out.scrollIntoView({behavior:"smooth"})}
+function nearest(x){return[8,10,12,15,20,25].reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a)}
+
+function token(h,t){
+ if(t.endsWith("+")){
+  let b=t.slice(0,-1);
+  if(b.length===2&&b[0]===b[1])return h.length===2&&R.indexOf(h[0])<=R.indexOf(b[0]);
+  if(b.length===2&&b[0]!==b[1])return h.length>=2&&h[0]===b[0]&&R.indexOf(h[1])<=R.indexOf(b[1]);
+  if(b.length===3)return h.length===3&&h[0]===b[0]&&h[2].toLowerCase()===b[2].toLowerCase()&&R.indexOf(h[1])<=R.indexOf(b[1]);
+ }
+ if(t.includes("-")){
+  let [x,y]=t.split("-");
+  if(h.length===2&&x.length===2&&y.length===2&&x[0]===x[1]&&y[0]===y[1]){
+   let z=R.indexOf(h[0]);return h[0]===h[1]&&z>=Math.min(R.indexOf(x[0]),R.indexOf(y[0]))&&z<=Math.max(R.indexOf(x[0]),R.indexOf(y[0]));
+  }
+  if(h.length>=2&&x[0]===y[0]&&h[0]===x[0]){
+   let z=R.indexOf(h[1]);return z>=Math.min(R.indexOf(x[1]),R.indexOf(y[1]))&&z<=Math.max(R.indexOf(x[1]),R.indexOf(y[1]));
+  }
+ }
+ return h.toUpperCase()===t.toUpperCase();
+}
+function inside(h,s){return s.split(",").some(t=>token(h,t.trim()))}
+
+function tryReview(auto=false){
+ const h=norm(hand.value),p=pos.value,n=node.value,b=blinds.value;
+ const stacks=[+hero.value,+o1.value,+o2.value];
+ const missing=[]; if(!h)missing.push("hand");if(!p)missing.push("pozīcija");if(!b)missing.push("blindi");if(stacks.some(x=>!x))missing.push("stacki");if(!n)missing.push("spots/action");
+ if(missing.length){
+  fix.classList.remove("hide");out.classList.add("hide");
+  status.textContent="OCR pabeigts, bet vajag pārbaudīt: "+missing.join(", ")+".";
+  if(auto)fix.scrollIntoView({behavior:"smooth"}); return;
+ }
+ const bb=+b.split("/")[1],eff=Math.min(...stacks)/bb,d=nearest(eff),key=`${p}|${n}|${d}`,entry=DATA[key];
+ spot.textContent=`${h} · ${p} · ${eff.toFixed(1)} BB → ${d}bb reference · ${n}`;
+ if(entry){
+   const yes=inside(h,entry.range);
+   if(entry.action==="CALL"){action.textContent=yes?"CALL":"FOLD";freq.textContent=entry.summary;why.textContent="Hand-level rezultāts no iebūvētās publiskās guideline range."}
+   else {action.textContent=yes?"IN PURE OPEN RANGE":"OUTSIDE PURE RANGE";freq.textContent=entry.summary;why.textContent="Publiskais avots šajā spotā izmanto vairākus action sizingus; bez konkrētās rokas frequency aplikācija neizdomā, kurš sizing jālieto."}
+ }else{
+   action.textContent="NAV VERIFICĒTU HAND-LEVEL DATU";freq.textContent="Šim mezglam nav lokāli iebūvēta droša konkrētās rokas frekvence.";why.textContent="Review apzināti neģenerē izdomātu GTO darbību.";
+ }
+ out.classList.remove("hide");fix.classList.add("hide");out.scrollIntoView({behavior:"smooth"});
+}
 </script></main></body></html>
