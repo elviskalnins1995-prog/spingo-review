@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v14</title>
+<title>SpinGo Photo Review v15</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,8 +20,8 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v14</h1>
-<p class="muted">v14 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v15</h1>
+<p class="muted">v15 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -86,8 +86,8 @@ const B={
 
  // Hero area
  dealer:[.405,.655,.095,.090],
- card1:[.425,.690,.065,.120],
- card2:[.485,.690,.065,.120],
+ card1:[.423,.675,.085,.145],
+ card2:[.480,.675,.085,.145],
  heroStack:[.420,.805,.185,.130],
  actions:[.585,.775,.415,.225]
 };
@@ -264,55 +264,55 @@ function suitColor(name){
 }
 
 
-function glyphFeatures(canvas){
- let q=canvas.getContext("2d"),im=q.getImageData(0,0,canvas.width,canvas.height),d=im.data;
- let pts=[];
- for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
-   let k=(y*canvas.width+x)*4, lum=.299*d[k]+.587*d[k+1]+.114*d[k+2];
-   // dark printed rank on white classic card
-   if(lum<105)pts.push([x,y]);
+
+function isolateRank(full){
+ // Find dark rank ink in the upper-left quadrant of a white classic card.
+ // Do NOT assume the glyph starts at x=0/y=0: v14's fixed subcrop could cut off K/J.
+ let W=full.width,H=full.height,q=full.getContext("2d");
+ let searchW=Math.round(W*.58), searchH=Math.round(H*.58);
+ let d=q.getImageData(0,0,searchW,searchH).data, pts=[];
+ for(let y=0;y<searchH;y++)for(let x=0;x<searchW;x++){
+   let i=(y*searchW+x)*4,r=d[i],g=d[i+1],b=d[i+2],lum=.299*r+.587*g+.114*b;
+   // black rank or red rank, while excluding near-white card background
+   if(lum<115 || (r>120 && r>g*1.45 && r>b*1.45))pts.push([x,y]);
  }
- if(pts.length<20)return null;
- let xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
- let w=x1-x0+1,h=y1-y0+1;
- // density in 3x3 cells + aspect ratio. Useful to distinguish K from 7/J in this fixed deck font.
- let cells=Array(9).fill(0),tot=0;
- for(let [x,y] of pts){
-   let cx=Math.min(2,Math.floor((x-x0)/Math.max(1,w)*3)),cy=Math.min(2,Math.floor((y-y0)/Math.max(1,h)*3));
-   cells[cy*3+cx]++;tot++;
- }
- cells=cells.map(v=>v/tot);
- return {aspect:w/h,cells,bbox:[x0,y0,w,h],ink:tot};
+ if(pts.length<15)return null;
+ let xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+ let x0=Math.max(0,Math.min(...xs)-8),y0=Math.max(0,Math.min(...ys)-8);
+ let x1=Math.min(searchW-1,Math.max(...xs)+8),y1=Math.min(searchH-1,Math.max(...ys)+8);
+ // Limit height so suit/art below the rank doesn't dominate.
+ let maxH=Math.round(H*.36); y1=Math.min(y1,y0+maxH);
+ let c=document.createElement("canvas");
+ c.width=Math.max(1,x1-x0+1);c.height=Math.max(1,y1-y0+1);
+ c.getContext("2d").drawImage(full,x0,y0,c.width,c.height,0,0,c.width,c.height);
+ return c;
 }
 async function cardRankOCR(name){
- let full=crop(name,10);
- // Upper-left rank only. Keep suit symbol mostly out of this crop.
- let c=document.createElement("canvas");
- c.width=Math.max(1,Math.round(full.width*.42)); c.height=Math.max(1,Math.round(full.height*.48));
- c.getContext("2d").drawImage(full,0,0,c.width,c.height,0,0,c.width,c.height);
+ let full=crop(name,10), rankImg=isolateRank(full);
+ if(!rankImg)return {value:null,raw:"rank isolation failed",votes:0};
 
  let vals=[],raw=[];
- // OCR consensus, but require meaningful agreement. Do not convert I/L to J anymore:
- // that transformation was capable of fabricating J.
- for(let th of [105,125,145,165,185,205,225]){
-   let t=await tess(prep(c,th),"AKQJT23456789","10");
+ // Use both original grayscale/color crop and threshold variants.
+ for(let psm of ["10","7","6"]){
+   let t=await tess(rankImg,"AKQJT23456789",psm);
+   raw.push("orig/"+psm+":"+t);
+   t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
+   if(t.length===1)vals.push(t);
+ }
+ for(let th of [90,110,130,150,170,190,210,230]){
+   let t=await tess(prep(rankImg,th),"AKQJT23456789","10");
    raw.push(th+":"+t);
    t=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
    if(t.length===1)vals.push(t);
  }
- let count={}; vals.forEach(v=>count[v]=(count[v]||0)+1);
- let ordered=Object.keys(count).sort((a,b)=>count[b]-count[a]);
- let value=ordered[0]||null, votes=value?count[value]:0;
+ let count={};vals.forEach(v=>count[v]=(count[v]||0)+1);
+ let ordered=Object.keys(count).sort((x,y)=>count[y]-count[x]);
+ let value=ordered[0]||null,votes=value?count[value]:0;
 
- // Special protection for the observed K→7 error in the classic font:
- // if OCR is split between K and 7, inspect glyph width. K is materially wider than 7.
- let f=glyphFeatures(prep(c,165));
- if(f && count["7"] && (count["K"]||votes<4)){
-   if(f.aspect>0.42){ value="K"; votes=Math.max(count["K"]||0,3); raw.push("shape:wide-glyph=>K"); }
- }
- // Likewise, never accept a weak rank as certain.
- if(votes<2)value=null;
- return {value,raw:raw.join(" | "),votes,features:f};
+ // Confidence rule: consensus required, but don't blank a rank merely because one
+ // threshold disagrees. This is what caused v14 to return an empty hand.
+ if(votes<2 && vals.length)value=vals[0],votes=1;
+ return {value,raw:raw.join(" | "),votes};
 }
 
 function cardSuit(name){
@@ -373,7 +373,7 @@ async function analyzeNormalized(){
     blinds.value=Math.min(lb.value,rb.value)+"/"+Math.max(lb.value,rb.value);
 
   let fields=[
-   ["hand",r1&&r2,Math.min(c1.votes,c2.votes)],["Hero stack",!!hs.value,hs.votes],
+   ["hand",r1&&r2,Math.min(c1.votes||0,c2.votes||0)],["Hero stack",!!hs.value,hs.votes],
    ["left stack",!!ls.value,ls.votes],["right stack",!!rs.value,rs.votes],
    ["position",!!pos.value,yr>.003?5:0],["blinds",!!blinds.value,bm?5:2],["pot",!!pv.value,pv.votes]
   ];
@@ -382,7 +382,7 @@ async function analyzeNormalized(){
   if(rs.value && rb.value && +rs.value===+rb.value){oppR.value="";rs.value=null}
   let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v14 apzināti neatmin trūkstošos laukus.`:
+   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v15 apzināti neatmin trūkstošos laukus.`:
    `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
@@ -392,8 +392,8 @@ async function analyzeNormalized(){
   diag.textContent=
 `TITLE => ${title.value} [${title.raw}]
 NEXT => ${next.value} [${next.raw}]
-CARD1 => ${c1.value} votes=${c1.votes} aspect=${c1.features?.aspect?.toFixed(3)||"-"} [${c1.raw}]
-CARD2 => ${c2.value} votes=${c2.votes} aspect=${c2.features?.aspect?.toFixed(3)||"-"} [${c2.raw}]
+CARD1 => ${c1.value} votes=${c1.votes} [${c1.raw}]
+CARD2 => ${c2.value} votes=${c2.votes} [${c2.raw}]
 CARD COLORS => ${col1}/${col2}
 HERO STACK => ${hs.value} votes=${hs.votes} [${hs.raw}]
 LEFT STACK => ${ls.value} votes=${ls.votes} [${ls.raw}]

@@ -1,20 +1,18 @@
-SpinGo Photo Review v14
+SpinGo Photo Review v15
 
-Built from the v13 test result:
-Correct in v13: 3-max, BTN, Hero 300, opponents 290/280, blinds 10/20,
-next 15/30, pot 30 and left blind 10.
-Remaining observed error: K♠ J♥ was read as 7J.
+Based on the v14 test screenshot:
+WORKING: poker-window crop, 3-max, BTN, Hero 300, opponents 290/280,
+10/20, next 15/30, pot 30, posts 10/20.
+BROKEN IN v14: Hero hand was blank although K♠ J♥ is clearly visible.
 
-v14 focuses only on card recognition:
-- larger classic-card rank crop;
-- seven threshold passes;
-- removed the unsafe I/L -> J substitution;
-- rejects weak one-off OCR guesses;
-- adds glyph geometry as a K-vs-7 cross-check for the observed deck font;
-- detects red vs black separately;
-- when card colors differ, automatically appends 'o' (offsuit);
-- when both cards have the same red/black class, v14 does NOT falsely assume suited,
-  because hearts/diamonds and spades/clubs still require exact suit-symbol recognition.
+Root cause addressed:
+v14 cropped a fixed fraction of each card and could cut through the rank glyph.
+v15 takes a larger full-card region, finds the dark/red printed ink inside the
+upper-left quadrant, builds a rank crop from the actual pixels, and then OCRs that
+crop with multiple segmentation modes plus 8 threshold passes.
 
-Reference target for supplied image: KJo.
+v15 no longer blanks a rank just because consensus is imperfect; it reports low
+confidence instead. Different red/black card colors yield offsuit automatically.
+
+Reference target: KJo.
 For completed-hand/training review.
