@@ -1,14 +1,14 @@
-SpinGo Photo Review v8
+SpinGo Photo Review v9
 
-Galvenās izmaiņas:
-- OlyBet/GG tipa screenshot vairs netiek OCR-ots kā viens liels teksta bloks.
-- Attēls tiek sadalīts: header, opponent-left, opponent-right, pot, hero, hero card 1, hero card 2, action buttons.
-- Nosaka HU/3-max pēc redzamajiem augšējiem seat reģioniem.
-- Heads-up gadījumā Hero dealer/button tiek interpretēts kā BTN/SB.
-- "Next Blinds" netiek automātiski uzskatīts par pašreizējiem blind.
-- Hero kārtīm ir atsevišķas OCR zonas; suited/off-suit tiek mēģināts noteikt no četru krāsu deck fona.
-- Iebūvēts HU BB call-vs-BTN-shove guideline 10/13/25bb.
-- Saglabāti 3-max BB vs BTN/SB shove guideline mezgli.
-- Mixed HU opening/defense spotā aplikācija neizdomā nepublicētas hand-level frekvences.
+v9 is calibrated around the supplied OlyBet/GG four-colour screenshot layout.
 
-Paredzēts pabeigtu handu un treniņa spotu review, nevis live-play lēmumu asistentam.
+Fixes:
+- Hero cards use separate tight OCR regions.
+- Dealer position uses yellow-pixel detection around the D button instead of text OCR alone.
+- Empty third seat is used to distinguish heads-up from 3-max.
+- Current blinds are reconstructed from visible posted chips / call amount.
+- 'Next Blinds' is parsed separately and never used as current blinds.
+- Stack, pot and posted-bet regions are OCR'd separately.
+- Debug view draws the exact regions used by the detector.
+
+For completed-hand/training review.
