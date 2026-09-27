@@ -1,102 +1,217 @@
 <!doctype html><html lang="lv"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SpinGo Photo Review v9</title>
+<title>SpinGo Photo Review v10</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:780px;margin:auto;padding:15px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}.camera{display:block;text-align:center;padding:24px;border-radius:16px;background:#285f8b;border:2px solid #80c4f6;font-size:22px;font-weight:900;cursor:pointer}input[type=file]{display:none}#preview{display:none;width:100%;max-height:52vh;object-fit:contain;border-radius:14px;margin-top:12px}.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.muted{color:#9db0bf;line-height:1.45}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:block;color:#9db0bf;font-size:12px;margin:7px 0 4px}input.manual,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:#fff;font-size:15px}button{font-weight:850}.pill{display:inline-block;padding:6px 10px;margin:3px;border-radius:999px;background:#173047}.hide{display:none}.result{text-align:center;background:#09131c;border:1px solid #49657d;border-radius:15px;padding:20px}.action{font-size:34px;font-weight:950;color:#f0c85d}canvas{max-width:100%}@media(max-width:520px){.grid{grid-template-columns:1fr}}</style></head><body><main>
-<h1>📷 Spin & Go Photo Review v9</h1>
-<p class=muted>Uzlabota OlyBet/GG 4-colour galda nolasīšana. Paredzēts pabeigtu handu un treniņa screenshotu analīzei.</p>
-<section class=card><label class=camera>📷 BILDĒT / IZVĒLĒTIES FOTO<input id=photo type=file accept="image/*" capture="environment"></label><img id=preview><div id=status class=status>Gaida foto.</div></section>
-<section id=det class="card hide"><h3>Atpazīts no attēla</h3><div id=pills></div><div class=grid>
-<div><label>Hero hand</label><input class=manual id=hand></div><div><label>Spēlētāji</label><select id=players><option value=2>Heads-up</option><option value=3>3-max</option></select></div>
+*{box-sizing:border-box}body{margin:0;background:#071019;color:#f4f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:800px;margin:auto;padding:15px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
+.camera{display:block;text-align:center;padding:24px;border-radius:16px;background:#285f8b;border:2px solid #80c4f6;font-size:22px;font-weight:900;cursor:pointer}
+input[type=file]{display:none}#preview{display:none;width:100%;max-height:52vh;object-fit:contain;border-radius:14px;margin-top:12px}
+.status{padding:11px;border-radius:10px;background:#09131c;color:#a9bbc9;margin-top:10px;white-space:pre-wrap}.muted{color:#9db0bf;line-height:1.45}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:block;color:#9db0bf;font-size:12px;margin:7px 0 4px}
+input.manual,select,button{width:100%;padding:11px;border:1px solid #3d5870;border-radius:9px;background:#0a141e;color:#fff;font-size:15px}
+button{font-weight:850}.pill{display:inline-block;padding:6px 10px;margin:3px;border-radius:999px;background:#173047}.hide{display:none}
+.ok{color:#59dd98}.warn{color:#f0c85d}canvas{max-width:100%;border-radius:10px}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>📷 Spin & Go Photo Reader v10</h1>
+<p class=muted>Kalibrēts tava OlyBet/GG 4-colour galda izkārtojumam. v10 izmanto vairākus atsevišķus OCR mēģinājumus katrai zonai, nevis vienu OCR visam galdam.</p>
+
+<section class=card>
+<label class=camera>📷 BILDĒT / IZVĒLĒTIES FOTO<input id=photo type=file accept="image/*" capture="environment"></label>
+<img id=preview><div id=status class=status>Gaida foto.</div>
+</section>
+
+<section id=result class="card hide">
+<h3>Nolasītā situācija</h3><div id=pills></div>
+<div class=grid>
+<div><label>Hero hand</label><input class=manual id=hand></div>
+<div><label>Spēlētāji</label><select id=players><option value=2>Heads-up</option><option value=3>3-max</option></select></div>
 <div><label>Pozīcija</label><select id=pos><option value="">—</option><option>BTN/SB</option><option>BB</option><option>BTN</option><option>SB</option></select></div>
-<div><label>Hero stack</label><input class=manual id=hero type=number></div><div><label>Opponent stack</label><input class=manual id=opp type=number></div>
-<div><label>Pašreizējie blindi</label><select id=blinds><option value="">—</option><option>10/20</option><option>20/40</option><option>25/50</option><option>30/60</option><option>40/80</option><option>50/100</option><option>60/120</option><option>75/150</option></select></div>
-<div><label>Nākamie blindi</label><input class=manual id=nextBlinds readonly></div><div><label>Pot</label><input class=manual id=pot type=number></div>
-<div><label>Hero iemaksa</label><input class=manual id=heroBet type=number></div><div><label>Opponent iemaksa</label><input class=manual id=oppBet type=number></div>
-</div><label>Rekonstruētais spots</label><input class=manual id=spot readonly>
-<button onclick="review()">POST-HAND / TRENIŅA REVIEW</button></section>
-<section id=out class="card hide"><div class=result><div id=action class=action></div><div id=why class=muted></div></div></section>
-<section class=card><details><summary>OCR diagnostika</summary><div id=diag class=status>—</div><canvas id=dbg></canvas></details></section>
+<div><label>Hero stack</label><input class=manual id=hero type=number></div>
+<div><label>Opponent stack</label><input class=manual id=opp type=number></div>
+<div><label>Pašreizējie blindi</label><input class=manual id=blinds></div>
+<div><label>Next Blinds</label><input class=manual id=nextBlinds readonly></div>
+<div><label>Pot</label><input class=manual id=pot type=number></div>
+<div><label>Hero posted/bet</label><input class=manual id=heroBet type=number></div>
+<div><label>Opponent posted/bet</label><input class=manual id=oppBet type=number></div>
+</div>
+<div id=confidence class=status></div>
+</section>
+
+<section class=card><details><summary>Diagnostika — ko tieši OCR redzēja</summary><div id=diag class=status>—</div><canvas id=dbg></canvas></details></section>
+
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 let im=null;
-const $=id=>document.getElementById(id);
-photo.onchange=async e=>{let f=e.target.files?.[0];if(!f)return;preview.src=URL.createObjectURL(f);preview.style.display="block";im=await load(f);status.textContent="Analizēju galda zonas…";await analyze()};
-function load(f){return new Promise((ok,no)=>{let x=new Image();x.onload=()=>ok(x);x.onerror=no;x.src=URL.createObjectURL(f)})}
-function crop(x,y,w,h,s=3,threshold=false){let c=document.createElement("canvas");c.width=im.width*w*s;c.height=im.height*h*s;let q=c.getContext("2d");q.imageSmoothingEnabled=false;q.drawImage(im,im.width*x,im.height*y,im.width*w,im.height*h,0,0,c.width,c.height);if(threshold){let d=q.getImageData(0,0,c.width,c.height);for(let i=0;i<d.data.length;i+=4){let v=(d.data[i]+d.data[i+1]+d.data[i+2])/3>145?255:0;d.data[i]=d.data[i+1]=d.data[i+2]=v}q.putImageData(d,0,0)}return c}
-async function ocr(c,white=""){let opt={};if(white)opt.tessedit_char_whitelist=white;let r=await Tesseract.recognize(c,"eng",opt);return (r.data.text||"").trim()}
-function numbers(t){return [...t.matchAll(/\d{1,4}/g)].map(x=>+x[0])}
-function rank(t){t=t.toUpperCase().replace(/10/g,"T");let m=t.match(/[AKQJT2-9]/);return m?m[0]:""}
+const $=x=>document.getElementById(x);
+
+photo.onchange=async e=>{
+ let f=e.target.files?.[0]; if(!f)return;
+ preview.src=URL.createObjectURL(f); preview.style.display="block";
+ result.classList.add("hide"); status.textContent="Ielādēju attēlu…";
+ im=await loadImage(f); await analyze();
+};
+function loadImage(f){return new Promise((ok,no)=>{let x=new Image();x.onload=()=>ok(x);x.onerror=no;x.src=URL.createObjectURL(f)})}
+
+// Coordinates are normalized from the supplied 1277×881 reference.
+// Each ROI is intentionally tight to avoid nearby UI text.
+const BOX={
+ next:[0.000,0.000,0.315,0.060],
+ leftSeat:[0.130,0.295,0.075,0.060],
+ rightSeat:[0.790,0.295,0.075,0.060],
+ leftBet:[0.220,0.350,0.065,0.070],
+ rightBet:[0.715,0.350,0.065,0.070],
+ pot:[0.420,0.330,0.165,0.060],
+ heroStack:[0.460,0.875,0.080,0.055],
+ heroBet:[0.470,0.625,0.070,0.070],
+ dealer:[0.405,0.650,0.070,0.075],
+ card1:[0.434,0.705,0.030,0.045],
+ card2:[0.487,0.703,0.030,0.045],
+ actions:[0.595,0.790,0.400,0.195]
+};
+
+function roi(name,scale=8){
+ let z=BOX[name],c=document.createElement("canvas");
+ c.width=Math.max(1,Math.round(im.width*z[2]*scale)); c.height=Math.max(1,Math.round(im.height*z[3]*scale));
+ let q=c.getContext("2d");q.imageSmoothingEnabled=false;
+ q.drawImage(im,im.width*z[0],im.height*z[1],im.width*z[2],im.height*z[3],0,0,c.width,c.height);
+ return c;
+}
+function thresholdCanvas(src,th,invert=false){
+ let c=document.createElement("canvas");c.width=src.width;c.height=src.height;
+ let q=c.getContext("2d");q.drawImage(src,0,0);let d=q.getImageData(0,0,c.width,c.height);
+ for(let i=0;i<d.data.length;i+=4){
+   let v=.299*d.data[i]+.587*d.data[i+1]+.114*d.data[i+2];
+   let w=v>th?255:0;if(invert)w=255-w;d.data[i]=d.data[i+1]=d.data[i+2]=w;
+ }
+ q.putImageData(d,0,0);return c;
+}
+async function tess(c,white,psm="7"){
+ let r=await Tesseract.recognize(c,"eng",{tessedit_char_whitelist:white,tessedit_pageseg_mode:psm});
+ return (r.data.text||"").trim();
+}
+function digits(t){let m=(t||"").match(/\d+/g);return m?m.join(""):""}
+function validNum(s,min,max){let n=+digits(s);return n>=min&&n<=max?n:null}
+
+// Majority/consensus OCR across brightness thresholds.
+async function numberOCR(name,min,max){
+ let base=roi(name,8),vals=[],raw=[];
+ for(let th of [130,150,170,190]){
+   let t=await tess(thresholdCanvas(base,th,false),"0123456789","7");
+   raw.push(th+":"+t);let n=validNum(t,min,max);if(n!==null)vals.push(n);
+ }
+ if(!vals.length)return {value:null,raw:raw.join(" | ")};
+ let counts={};vals.forEach(v=>counts[v]=(counts[v]||0)+1);
+ let value=+Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+ return {value,raw:raw.join(" | "),votes:counts[value]};
+}
+async function rankOCR(name){
+ let base=roi(name,12),cand=[],raw=[];
+ for(let th of [145,165,185,205]){
+   let t=await tess(thresholdCanvas(base,th,false),"AKQJT23456789","10");
+   raw.push(th+":"+t);t=t.toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
+   if(t.length===1)cand.push(t);
+ }
+ if(!cand.length)return {value:"",raw:raw.join(" | ")};
+ let counts={};cand.forEach(v=>counts[v]=(counts[v]||0)+1);
+ let value=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+ return {value,raw:raw.join(" | "),votes:counts[value]};
+}
+async function textOCR(name,white,psm="6"){
+ let b=roi(name,4),a=await tess(b,white,psm),c=await tess(thresholdCanvas(b,165,false),white,psm);
+ return {value:(a+" "+c).trim(),raw:"normal:"+a+" | threshold:"+c};
+}
+function yellowRatio(c){
+ let d=c.getContext("2d").getImageData(0,0,c.width,c.height).data,n=0,tot=0;
+ for(let i=0;i<d.length;i+=16){let r=d[i],g=d[i+1],b=d[i+2];if(r>150&&g>120&&b<115&&r>g*1.02)n++;tot++}
+ return n/tot;
+}
+function colorClass(name){
+ let c=roi(name,4),d=c.getContext("2d").getImageData(0,0,c.width,c.height).data,rn=0,gn=0,bn=0;
+ for(let i=0;i<d.length;i+=16){let r=d[i],g=d[i+1],b=d[i+2];if(r>120&&r>g*1.25)rn++;if(g>100&&g>r*1.18)gn++;if(b>100&&b>r*1.15)bn++}
+ return rn>gn&&rn>bn?"red":gn>rn&&gn>bn?"green":bn>rn&&bn>gn?"blue":"other";
+}
 async function analyze(){
  try{
-  // ROIs calibrated from supplied 1279x879 screenshot; ratios survive resizing.
-  let Z={
-   next:crop(.00,.00,.31,.065,3,true),
-   leftSeat:crop(.075,.145,.19,.205,3,true),
-   rightSeat:crop(.735,.145,.19,.205,3,true),
-   leftBet:crop(.215,.305,.07,.115,4,true),
-   rightBet:crop(.715,.305,.07,.115,4,true),
-   pot:crop(.405,.325,.19,.065,4,true),
-   heroStack:crop(.435,.835,.13,.095,4,true),
-   heroBet:crop(.455,.585,.09,.11,4,true),
-   dealer:crop(.405,.64,.075,.085,4,false),
-   card1:crop(.421,.688,.055,.105,5,true),
-   card2:crop(.474,.688,.055,.105,5,true),
-   actions:crop(.595,.79,.40,.195,3,true)
-  };
-  let [nt,ls,rs,lb,rb,pt,hs,hb,dt,c1,c2,at]=await Promise.all([
-   ocr(Z.next,"NEXTBLINDS0123456789/:"),ocr(Z.leftSeat,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"),
-   ocr(Z.rightSeat,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"),ocr(Z.leftBet,"0123456789"),ocr(Z.rightBet,"0123456789"),
-   ocr(Z.pot,"TOTALPOT:0123456789"),ocr(Z.heroStack,"0123456789"),ocr(Z.heroBet,"0123456789"),
-   ocr(Z.dealer,"D"),ocr(Z.card1,"AKQJT23456789"),ocr(Z.card2,"AKQJT23456789"),ocr(Z.actions,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+  status.textContent="1/4 — lasu abas kārtis vairākos kontrastos…";
+  let [c1,c2]=await Promise.all([rankOCR("card1"),rankOCR("card2")]);
+
+  status.textContent="2/4 — lasu stackus, potu un iemaksas…";
+  let [hs,os,hb,ob,pv]=await Promise.all([
+    numberOCR("heroStack",20,2000),numberOCR("leftSeat",20,2000),
+    numberOCR("heroBet",1,300),numberOCR("leftBet",1,300),numberOCR("pot",1,3000)
   ]);
-  let lsn=numbers(ls),rsn=numbers(rs),hsv=numbers(hs),hbv=numbers(hb),lbv=numbers(lb),rbv=numbers(rb),pv=numbers(pt);
-  // Empty upper-right seat is a stronger HU signal than noisy OCR text.
-  let rightMeaningful=rs.replace(/[^A-Za-z0-9]/g,"").length>=3 && rsn.some(n=>n>=20);
-  players.value=rightMeaningful?"3":"2";
-  if(hsv.length)hero.value=hsv.find(n=>n>=20&&n<=2000)||hsv[0];
-  if(lsn.length)opp.value=lsn.find(n=>n>=20&&n<=2000)||lsn[lsn.length-1];
-  if(pv.length)pot.value=pv.find(n=>n>10&&n<3000)||"";
-  if(hbv.length)heroBet.value=hbv.find(n=>n<=300)||"";
-  if(lbv.length)oppBet.value=lbv.find(n=>n<=300)||"";
 
-  // Explicitly parse "Next Blinds", but keep it separate from current blinds.
-  let nm=nt.match(/(\d{1,3})\D+(\d{1,3})/); if(nm)nextBlinds.value=nm[1]+"/"+nm[2];
+  status.textContent="3/4 — nosaku seats, button un blindus…";
+  let [nextT,rightS,actions]=await Promise.all([
+    textOCR("next","NEXTBLINDSUP0123456789/:","6"),
+    numberOCR("rightSeat",20,2000),
+    textOCR("actions","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789","6")
+  ]);
 
-  // Current blinds from visible forced contributions / call amount.
-  let call=at.match(/CALL\D{0,8}(\d{1,3})/i), hbet=+heroBet.value, obet=+oppBet.value;
-  if(hbet&&obet&&obet===hbet*2)blinds.value=hbet+"/"+obet;
-  else if(call){let x=+call[1];let pair=["10/20","20/40","25/50","30/60","40/80","50/100","60/120","75/150"].find(v=>+v.split("/")[0]===x);if(pair)blinds.value=pair}
+  let r1=c1.value,r2=c2.value;
+  if(r1&&r2){
+    let suited=colorClass("card1")===colorClass("card2");
+    hand.value=r1+r2+(r1===r2?"":(suited?"s":"o"));
+  } else hand.value="";
 
-  // Dealer/button: yellow D is in a fixed area immediately upper-left of hero cards.
-  let dealerPresent=yellowRatio(Z.dealer)>.008 || /\bD\b/.test(dt);
-  if(players.value==="2"&&dealerPresent)pos.value="BTN/SB";
+  hero.value=hs.value??"";opp.value=os.value??"";
+  heroBet.value=hb.value??"";oppBet.value=ob.value??"";pot.value=pv.value??"";
 
-  // Rank OCR gets dedicated, tight, high-contrast ROIs.
-  let a=rank(c1),b=rank(c2);
-  if(a&&b)hand.value=a+b+(a===b?"":"o"); // 4-colour backgrounds differ => offsuit in this layout.
+  // Third seat is considered occupied only if a plausible stack is actually read there.
+  players.value=rightS.value?"3":"2";
 
-  // Structural reconstruction.
-  if(players.value==="2"&&pos.value==="BTN/SB"&&hbet&&obet&&obet===hbet*2){
-    spot.value="HU BTN/SB — preflop first action (SB posted "+hbet+", BB posted "+obet+")";
-  } else if(players.value==="2"&&pos.value==="BTN/SB") spot.value="HU BTN/SB";
-  else spot.value=(players.value==="2"?"Heads-up":"3-max")+" — pārbaudi action";
+  // Dealer detection uses the yellow D marker near Hero, not OCR.
+  let yr=yellowRatio(roi("dealer",4));
+  pos.value=(players.value==="2"&&yr>.004)?"BTN/SB":"";
 
-  pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
-   (hand.value?`<span class=pill>${hand.value}</span>`:"")+(pos.value?`<span class=pill>${pos.value}</span>`:"")+
-   (blinds.value?`<span class=pill>${blinds.value}</span>`:"")+(hero.value?`<span class=pill>Hero ${hero.value}</span>`:"")+
-   (opp.value?`<span class=pill>Opp ${opp.value}</span>`:"");
-  diag.textContent=`NEXT: ${nt}\nLEFT SEAT: ${ls}\nRIGHT SEAT: ${rs}\nLEFT BET: ${lb}\nRIGHT BET: ${rb}\nPOT: ${pt}\nHERO STACK: ${hs}\nHERO BET: ${hb}\nDEALER: ${dt} / yellow=${yellowRatio(Z.dealer).toFixed(4)}\nCARD1: ${c1}\nCARD2: ${c2}\nACTIONS: ${at}`;
-  drawDebug();det.classList.remove("hide");status.textContent="✓ Nolasīšana pabeigta. v9 atdala pašreizējos blindus no “Next Blinds” un meklē dzelteno dealer pogu.";det.scrollIntoView({behavior:"smooth"});
- }catch(e){status.textContent="Kļūda: "+e.message}
+  // Parse only the explicitly labelled NEXT BLINDS header as next level.
+  let nt=nextT.value.replace(/\s/g,"");
+  let nm=nt.match(/(\d{1,3})[\/|](\d{1,3})/) || nt.match(/(\d{2,3})(\d{2,3})/);
+  nextBlinds.value=nm?(nm[1]+"/"+nm[2]):"";
+
+  // Current blind level: reconstruct from posted chips when they form SB/BB.
+  let h=+heroBet.value,o=+oppBet.value;
+  if(h&&o&&Math.max(h,o)===2*Math.min(h,o))blinds.value=Math.min(h,o)+"/"+Math.max(h,o);
+  else {
+    // fallback: Call X often equals the amount still required, but do not invent a level.
+    blinds.value="";
+  }
+
+  pills.innerHTML=
+    `<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
+    (hand.value?`<span class=pill>${hand.value}</span>`:"")+
+    (pos.value?`<span class=pill>${pos.value}</span>`:"")+
+    (blinds.value?`<span class=pill>${blinds.value}</span>`:"")+
+    (hero.value?`<span class=pill>Hero ${hero.value}</span>`:"")+
+    (opp.value?`<span class=pill>Opp ${opp.value}</span>`:"");
+
+  let good=[];
+  if(hand.value)good.push("hand");if(hero.value)good.push("Hero stack");if(opp.value)good.push("opponent stack");
+  if(pos.value)good.push("button/position");if(blinds.value)good.push("current blinds");if(pot.value)good.push("pot");
+  confidence.textContent="Automātiski nolasīts: "+good.join(", ")+(good.length<6?". Trūkstošo lauku vari izlabot manuāli.":".");
+
+  diag.textContent=
+`CARD 1 => ${c1.value} [${c1.raw}]
+CARD 2 => ${c2.value} [${c2.raw}]
+HERO STACK => ${hs.value} [${hs.raw}]
+OPP STACK => ${os.value} [${os.raw}]
+HERO BET => ${hb.value} [${hb.raw}]
+OPP BET => ${ob.value} [${ob.raw}]
+POT => ${pv.value} [${pv.raw}]
+RIGHT SEAT => ${rightS.value} [${rightS.raw}]
+NEXT HEADER => ${nextT.raw}
+ACTIONS => ${actions.raw}
+DEALER yellow ratio => ${yr.toFixed(4)}
+CARD COLORS => ${colorClass("card1")} / ${colorClass("card2")}`;
+
+  drawDebug();
+  result.classList.remove("hide");
+  status.textContent="✓ v10 analīze pabeigta.";
+  result.scrollIntoView({behavior:"smooth"});
+ }catch(e){status.textContent="Analīzes kļūda: "+e.message}
 }
-function yellowRatio(c){let d=c.getContext("2d").getImageData(0,0,c.width,c.height).data,n=0,tot=0;for(let i=0;i<d.length;i+=16){let r=d[i],g=d[i+1],b=d[i+2];if(r>150&&g>120&&b<100&&r/g<1.8)n++;tot++}return n/tot}
-function review(){
- out.classList.remove("hide");
- let h=hand.value||"?", ctx=spot.value||"nepilnīgs spots";
- action.textContent="POST-HAND SPOTS: "+h;
- why.textContent=ctx+". v9 galvenais uzlabojums ir situācijas rekonstrukcija no screenshot; ja kāds OCR lauks nav pareizs, to var izlabot augstāk pirms treniņa review.";
- out.scrollIntoView({behavior:"smooth"});
+function drawDebug(){
+ let c=dbg,q=c.getContext("2d");c.width=im.width;c.height=im.height;q.drawImage(im,0,0);q.strokeStyle="yellow";q.lineWidth=Math.max(2,im.width/500);
+ Object.entries(BOX).forEach(([k,z])=>{q.strokeRect(z[0]*c.width,z[1]*c.height,z[2]*c.width,z[3]*c.height);q.fillStyle="yellow";q.font=Math.max(12,im.width/80)+"px sans-serif";q.fillText(k,z[0]*c.width,(z[1]*c.height)+14)})
 }
-function drawDebug(){let c=dbg,q=c.getContext("2d");c.width=im.width;c.height=im.height;q.drawImage(im,0,0);q.strokeStyle="yellow";q.lineWidth=Math.max(2,im.width/500);[[0,0,.31,.065],[.075,.145,.19,.205],[.735,.145,.19,.205],[.215,.305,.07,.115],[.405,.325,.19,.065],[.435,.835,.13,.095],[.455,.585,.09,.11],[.405,.64,.075,.085],[.421,.688,.055,.105],[.474,.688,.055,.105],[.595,.79,.40,.195]].forEach(z=>q.strokeRect(z[0]*c.width,z[1]*c.height,z[2]*c.width,z[3]*c.height))}
 </script></main></body></html>
