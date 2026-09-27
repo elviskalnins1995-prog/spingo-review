@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v17</title>
+<title>SpinGo Photo Review v18</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,8 +20,8 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v17</h1>
-<p class="muted">v17 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v18</h1>
+<p class="muted">v18 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -293,28 +293,16 @@ function isolateRank(full){
  c.getContext("2d").drawImage(full,x0,y0,c.width,c.height,0,0,c.width,c.height);
  return c;
 }
+async function withTimeout(promise,ms,fallback){
+ return Promise.race([promise,new Promise(resolve=>setTimeout(()=>resolve(fallback),ms))]);
+}
 async function cardRankOCR(name){
  let full=crop(name,7), rankImg=isolateRank(full);
  if(!rankImg)return {value:null,raw:"rank isolation failed",votes:0};
-
- // Mobile-safe: only three complementary passes. v15 could launch >60 OCR jobs
- // for one photo and stall before the result panel was updated.
- let tests=[
-   [rankImg,"10","orig"],
-   [prep(rankImg,145),"10","th145"],
-   [prep(rankImg,190),"10","th190"]
- ];
- let vals=[],raw=[];
- for(let [img,psm,label] of tests){
-   let t=await tess(img,"AKQJT23456789",psm);
-   raw.push(label+":"+t);
-   let v=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
-   if(v.length===1)vals.push(v);
- }
- if(!vals.length)return {value:null,raw:raw.join(" | "),votes:0};
- let count={}; vals.forEach(v=>count[v]=(count[v]||0)+1);
- let ordered=Object.keys(count).sort((x,y)=>count[y]-count[x]);
- return {value:ordered[0],raw:raw.join(" | "),votes:count[ordered[0]]};
+ // One OCR pass only; hard timeout guarantees the app continues on mobile.
+ let t=await withTimeout(tess(rankImg,"AKQJT23456789","10"),3500,"");
+ let v=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
+ return {value:v.length===1?v:null,raw:"single:"+t,votes:v.length===1?1:0};
 }
 
 function cardSuit(name){
@@ -386,9 +374,9 @@ async function analyzeNormalized(){
     voteOCR("rightBet","0123456789",num(1,300)),
     voteOCR("pot","0123456789",num(1,3000))
   ]);
-  status.textContent="Pamatlauki nolasīti. Nolasu 1. kārti…";
+  status.textContent="Pamatlauki nolasīti. Nolasu 1. kārti…"; diag.textContent="Pamatlauki OK. Kārts 1…";
   let c1=await cardRankOCR("card1");
-  status.textContent="1. kārts: "+(c1.value||"?")+". Nolasu 2. kārti…";
+  status.textContent="1. kārts: "+(c1.value||"?")+". Nolasu 2. kārti…"; diag.textContent="Kārts 1: "+(c1.value||"nav nolasīta")+" | Kārts 2…";
   let c2=await cardRankOCR("card2");
 
   // Cards: rank OCR + red/black suit class. Same color alone is not enough for suitedness,
@@ -398,10 +386,6 @@ async function analyzeNormalized(){
   // Different red/black colors guarantee offsuit. Same color could still be different suits,
   // so v14 refuses to invent "s" in that case.
   hand.value=(r1&&r2)?(r1+r2+(r1!==r2 && col1!==col2?"o":"")):"";
-  setTimeout(()=>{
-    let rec=quickStudyAction(hand.value,players.value,pos.value,+hero.value,currentBlinds.value,+leftBet.value,+rightBet.value);
-    setBestAction(rec[0],rec[1]);
-  },0);
 
   hero.value=hs.value||"";oppL.value=ls.value||"";oppR.value=rs.value||"";
   betL.value=lb.value||"";betR.value=rb.value||"";pot.value=pv.value||"";
@@ -423,6 +407,10 @@ async function analyzeNormalized(){
   if(!blinds.value && lb.value && rb.value && Math.max(lb.value,rb.value)===2*Math.min(lb.value,rb.value))
     blinds.value=Math.min(lb.value,rb.value)+"/"+Math.max(lb.value,rb.value);
 
+  // All situation fields are now populated. Produce the recommendation only now.
+  let rec=quickStudyAction(hand.value,players.value,pos.value,+hero.value,blinds.value,+betL.value,+betR.value);
+  setBestAction(rec[0],rec[1]);
+  status.textContent="Analīze pabeigta.";
   let fields=[
    ["hand",r1&&r2,Math.min(c1.votes||0,c2.votes||0)],["Hero stack",!!hs.value,hs.votes],
    ["left stack",!!ls.value,ls.votes],["right stack",!!rs.value,rs.votes],
@@ -433,7 +421,7 @@ async function analyzeNormalized(){
   if(rs.value && rb.value && +rs.value===+rb.value){oppR.value="";rs.value=null}
   let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v17 apzināti neatmin trūkstošos laukus.`:
+   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v18 apzināti neatmin trūkstošos laukus.`:
    `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
