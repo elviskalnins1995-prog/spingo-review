@@ -1,27 +1,20 @@
-SpinGo Photo Review v10
+SpinGo Photo Review v11
 
-Calibrated against the supplied 1277×881 OlyBet/GG four-colour table screenshot.
+Main change:
+The OCR regions are no longer tied to the full phone photograph.
 
-Expected reference read:
-- Hero cards: J4o
-- Players: Heads-up
-- Hero position: BTN/SB from yellow D marker
-- Hero stack: 160
-- Opponent stack: 650
-- Hero posted: 30
-- Opponent posted: 60
-- Current blinds reconstructed as 30/60
-- Pot: 90
-- Header 'Next Blinds 40/80' is stored separately and is NOT treated as current blinds.
+Pipeline:
+1. Detect a large poker/application window in the photo.
+2. Crop it.
+3. Normalize the crop to 1200x760.
+4. Read cards, title/blinds, stacks, bets, pot and dealer button from normalized coordinates.
+5. Use multiple threshold passes and majority voting.
+6. Do not guess fields that fail confidence checks.
 
-Technical changes:
-- tight card-rank ROIs;
-- 4 threshold passes per card and numeric field;
-- majority-vote OCR;
-- single-character OCR mode for ranks;
-- separate numeric OCR for stacks/bets/pot;
-- yellow-pixel dealer-button detection;
-- third-seat occupancy requires a plausible stack;
-- debug overlay shows every ROI.
+Calibrated for the classic white 2-colour card style shown in the supplied reference photo.
 
-For completed-hand/training screenshot review.
+Important:
+- OpenCV.js and Tesseract.js are loaded from HTTPS CDNs, so the GitHub Pages site needs internet access.
+- This is a browser-side heuristic reader, not a trained custom computer-vision model.
+- If a field cannot be read reliably, v11 leaves it for manual correction instead of fabricating a value.
+- Intended for completed-hand / training review.
