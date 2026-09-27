@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<title>SpinGo Camera</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#071019;color:#f3f7fa;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:680px;margin:auto;min-height:100vh;padding:18px;display:flex;flex-direction:column;justify-content:center}
+h1{text-align:center;font-size:24px;margin:0 0 8px}
+p{text-align:center;color:#9db0bf;margin:0 0 22px;line-height:1.45}
+.camera{display:block;width:100%;padding:25px 15px;border-radius:18px;background:#285f8b;border:2px solid #80c4f6;text-align:center;font-size:23px;font-weight:900;cursor:pointer}
+input[type=file]{display:none}
+#preview{display:none;width:100%;max-height:65vh;object-fit:contain;background:#03070a;border-radius:16px;margin-top:16px}
+#state{margin-top:12px;padding:12px;border-radius:12px;background:#101c27;color:#a9bbc9;text-align:center}
+#again{display:none;margin-top:10px;width:100%;padding:15px;border-radius:12px;border:1px solid #49657c;background:#111c27;color:white;font-size:16px;font-weight:800}
+</style>
+</head>
+<body>
+<main>
+<h1>Spin & Go foto</h1>
+<p>Nospied pogu, nobildē situāciju un apstiprini foto telefonā.</p>
+
+<label class="camera">
+📷 BILDĒT
+<input id="camera" type="file" accept="image/*" capture="environment">
+</label>
+
+<img id="preview" alt="Uzbildētais pokera spots">
+<div id="state">Gaida foto.</div>
+<button id="again" onclick="camera.click()">📷 BILDĒT VĒLREIZ</button>
+</main>
+
+<script>
+const camera=document.getElementById("camera");
+const preview=document.getElementById("preview");
+const state=document.getElementById("state");
+const again=document.getElementById("again");
+
+camera.addEventListener("change",()=>{
+ const f=camera.files && camera.files[0];
+ if(!f) return;
+ if(preview.dataset.url) URL.revokeObjectURL(preview.dataset.url);
+ const url=URL.createObjectURL(f);
+ preview.dataset.url=url;
+ preview.src=url;
+ preview.style.display="block";
+ again.style.display="block";
+ state.textContent="✓ Foto pievienots un gatavs augšupielādei / apstrādei.";
+ preview.scrollIntoView({behavior:"smooth",block:"center"});
+});
+</script>
+</body>
+</html>
