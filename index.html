@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<title>SpinGo Photo Review v20</title>
+<title>SpinGo Photo Review v22</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#071019;color:#f5f8fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:860px;margin:auto;padding:14px}.card{background:#111c27;border:1px solid #30465a;border-radius:18px;padding:15px;margin:12px 0}
@@ -20,11 +20,14 @@ canvas{max-width:100%;border-radius:10px}.row{display:flex;gap:8px}.row>*{flex:1
 
 input[readonly], select:disabled{opacity:.78;cursor:not-allowed;background:#07131d}
 #hand{border:2px solid #f2f5f7;background:#07131d;font-weight:800;font-size:1.15rem}
+
+#players,#pos{pointer-events:none;opacity:.78;background:#07131d}
+input[readonly]{user-select:text}
 </style>
 </head>
 <body><main>
-<h1>📷 Spin & Go Photo Reader v20</h1>
-<p class="muted">v20 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
+<h1>📷 Spin & Go Photo Reader v22</h1>
+<p class="muted">v22 vispirms atrod pokera logu fotogrāfijā un normalizē to uz vienādu izmēru. Tāpēc galds drīkst būt lielāks, mazāks vai nobīdīts attēlā. Kalibrēts klasiskajam baltajam 2-color kāršu dizainam.</p>
 
 <section class="card">
 <label class="camera">📷 BILDĒT / IZVĒLĒTIES FOTO
@@ -48,8 +51,8 @@ input[readonly], select:disabled{opacity:.78;cursor:not-allowed;background:#0713
 <div id="pills"></div>
 <div class="grid">
 <div><label>Hero hand <span style="opacity:.7">(vienīgais manuālais lauks)</span></label><input class="field" id="hand"></div>
-<div><label>Spēlētāji</label><select id="players" disabled><option value="2">Heads-up</option><option value="3">3-max</option></select></div>
-<div><label>Pozīcija</label><select id="pos" disabled><option value="">—</option><option>BTN/SB</option><option>BB</option><option>BTN</option><option>SB</option></select></div>
+<div><label>Spēlētāji</label><select id="players" aria-disabled="true"><option value="2">Heads-up</option><option value="3">3-max</option></select></div>
+<div><label>Pozīcija</label><select id="pos" aria-disabled="true"><option value="">—</option><option>BTN/SB</option><option>BB</option><option>BTN</option><option>SB</option></select></div>
 <div><label>Hero stack</label><input class="field" id="hero" type="number" readonly></div>
 <div><label>Opponent L stack</label><input class="field" id="oppL" type="number" readonly></div>
 <div><label>Opponent R stack</label><input class="field" id="oppR" type="number" readonly></div>
@@ -238,20 +241,36 @@ function prep(src,threshold){
  for(let i=0;i<d.length;i+=4){let v=.299*d[i]+.587*d[i+1]+.114*d[i+2];let w=v>threshold?255:0;d[i]=d[i+1]=d[i+2]=w}
  q.putImageData(im,0,0);return c;
 }
-async function tess(c,white="",psm="7"){
- let o={tessedit_pageseg_mode:psm};if(white)o.tessedit_char_whitelist=white;
- let r=await Tesseract.recognize(c,"eng",o);return (r.data.text||"").trim();
+
+let ocrWorker=null;
+async function getOCRWorker(){
+ if(ocrWorker)return ocrWorker;
+ if(!window.Tesseract)throw new Error("OCR bibliotēka nav ielādējusies.");
+ status.textContent="Ielādēju OCR modeli…";
+ ocrWorker=await Tesseract.createWorker("eng",1,{
+   logger:m=>{
+     if(m && m.status==="recognizing text" && typeof m.progress==="number")
+       diag.textContent="OCR: "+Math.round(m.progress*100)+"%";
+   }
+ });
+ return ocrWorker;
 }
-async function voteOCR(name,white,validator,psm="7"){
- let base=crop(name), vals=[],raw=[];
- for(let th of [125,145,165,185,205]){
-   let t=await tess(prep(base,th),white,psm);raw.push(th+":"+t);
-   let v=validator(t);if(v!==null&&v!=="")vals.push(v);
+async function tess(c,white="",psm="7"){
+ let w=await getOCRWorker();
+ let o={tessedit_pageseg_mode:psm};
+ if(white)o.tessedit_char_whitelist=white;
+ let r=await w.recognize(c,o);
+ return (r.data.text||"").trim();
+}
+async function oneOCR(name,white,validator,psm="7",threshold=165){
+ let base=crop(name,4), raw="";
+ try{
+   raw=await tess(prep(base,threshold),white,psm);
+   let value=validator(raw);
+   return {value:value===null||value===""?null:value,raw:"1x:"+raw,votes:value===null||value===""?0:1};
+ }catch(e){
+   return {value:null,raw:"ERROR: "+e.message,votes:0};
  }
- if(!vals.length)return {value:null,raw:raw.join(" | "),votes:0};
- let count={};vals.forEach(v=>count[v]=(count[v]||0)+1);
- let value=Object.keys(count).sort((a,b)=>count[b]-count[a])[0];
- return {value,raw:raw.join(" | "),votes:count[value]};
 }
 const num=(min,max)=>(t)=>{let m=(t||"").match(/\d{1,4}/g);if(!m)return null;let a=m.map(Number).filter(x=>x>=min&&x<=max);return a.length?a[a.length-1]:null};
 const rank=t=>{
@@ -291,19 +310,15 @@ function rankCandidates(full){
  return out;
 }
 async function cardRankOCR(name){
- let full=crop(name,14), candidates=rankCandidates(full), raw=[],vals=[];
- // Hard overall budget: try generous crops, but never block the rest of the app.
- let deadline=Date.now()+6000;
- for(let ci=0;ci<candidates.length && Date.now()<deadline;ci++){
-   let c=candidates[ci];
-   for(let th of [120,165,205]){
-     if(Date.now()>=deadline)break;
-     let img=prep(c,th);
-     let t=await withTimeout(tess(img,"AKQJT23456789","10"),1800,"");
-     raw.push("c"+ci+"/t"+th+":"+t);
-     let v=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
-     if(v.length===1)vals.push(v);
-   }
+ let full=crop(name,8), candidates=rankCandidates(full), raw=[],vals=[];
+ // Only two targeted attempts per card on the SAME worker.
+ for(let ci=0;ci<Math.min(2,candidates.length);ci++){
+   let img=prep(candidates[ci],165);
+   let t="";
+   try{t=await tess(img,"AKQJT23456789","10")}catch(e){raw.push("ERR:"+e.message);continue}
+   raw.push("c"+ci+":"+t);
+   let v=(t||"").toUpperCase().replace(/10/g,"T").replace(/[^AKQJT2-9]/g,"");
+   if(v.length===1)vals.push(v);
  }
  if(!vals.length)return {value:null,raw:raw.join(" | "),votes:0};
  let count={};vals.forEach(v=>count[v]=(count[v]||0)+1);
@@ -368,7 +383,10 @@ function refreshRecommendationFromFields(){
  let rec=quickStudyAction(hand.value,players.value,pos.value,+hero.value,blinds.value,+betL.value,+betR.value);
  setBestAction(rec[0],rec[1]);
 }
-hand.addEventListener("input",()=>{hand.value=hand.value.toUpperCase();refreshRecommendationFromFields()});
+hand.addEventListener("input",()=>{
+ hand.value=hand.value.toUpperCase().replace(/[^AKQJT2-9SO]/g,"").slice(0,3);
+ refreshRecommendationFromFields();
+});
 
 
 
@@ -377,22 +395,35 @@ hand.addEventListener("input",()=>{hand.value=hand.value.toUpperCase();refreshRe
 
 async function analyzeNormalized(){
  status.textContent="Nolasu galdu…";
+ players.value="";
+ pos.value="";
+ hero.value="";oppL.value="";oppR.value="";
+ blinds.value="";nextBlinds.value="";pot.value="";betL.value="";betR.value="";
+ hand.value=""; pills.innerHTML='<span class="pill">ANALĪZE…</span>';
  result.classList.remove("hide");
  confidence.innerHTML='<span class="warn">Notiek analīze…</span>'; setBestAction("ANALIZĒJU…","Nolasu handu, pozīciju, stackus, blindus un darbību.");
  diag.textContent="Sāku OCR…";
  try{
   // First read the fields that already worked reliably in v13/v14.
-  let [title,next,hs,ls,rs,lb,rb,pv]=await Promise.all([
-    voteOCR("title","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.-|/ ",t=>t,"6"),
-    voteOCR("next","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/ ",t=>t,"6"),
-    voteOCR("heroStack","0123456789",num(20,2000)),
-    voteOCR("leftStack","0123456789",num(20,2000)),
-    voteOCR("rightStack","0123456789",num(20,2000)),
-    voteOCR("leftBet","0123456789",num(1,300)),
-    voteOCR("rightBet","0123456789",num(1,300)),
-    voteOCR("pot","0123456789",num(1,3000))
-  ]);
-  status.textContent="Pamatlauki nolasīti. Nolasu 1. kārti…"; diag.textContent="Pamatlauki OK. Kārts 1…";
+  // Mobile-safe OCR: ONE reusable worker, ONE pass per field.
+  // No Promise fan-out and no orphaned background OCR jobs.
+  diag.textContent="OCR: title…";
+  let title=await oneOCR("title","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.-|/ ",t=>t,"6",155);
+  diag.textContent="OCR: next blinds…";
+  let next=await oneOCR("next","ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/ ",t=>t,"6",155);
+  diag.textContent="OCR: hero stack…";
+  let hs=await oneOCR("heroStack","0123456789",num(20,2000),"7",165);
+  diag.textContent="OCR: left stack…";
+  let ls=await oneOCR("leftStack","0123456789",num(20,2000),"7",165);
+  diag.textContent="OCR: right stack…";
+  let rs=await oneOCR("rightStack","0123456789",num(20,2000),"7",165);
+  diag.textContent="OCR: left bet…";
+  let lb=await oneOCR("leftBet","0123456789",num(1,300),"7",165);
+  diag.textContent="OCR: right bet…";
+  let rb=await oneOCR("rightBet","0123456789",num(1,300),"7",165);
+  diag.textContent="OCR: pot…";
+  let pv=await oneOCR("pot","0123456789",num(1,3000),"7",165);
+  status.textContent="Pamatlauku OCR pabeigts. Nolasu 1. kārti…"; diag.textContent="Pamatlauku OCR pabeigts. Kārts 1…";
   let c1=await cardRankOCR("card1");
   status.textContent="1. kārts: "+(c1.value||"?")+". Nolasu 2. kārti…"; diag.textContent="Kārts 1: "+(c1.value||"nav nolasīta")+" | Kārts 2…";
   let c2=await cardRankOCR("card2");
@@ -436,10 +467,10 @@ async function analyzeNormalized(){
   // Reject obvious blind-as-stack mistakes.
   if(ls.value && lb.value && +ls.value===+lb.value){oppL.value="";ls.value=null}
   if(rs.value && rb.value && +rs.value===+rb.value){oppR.value="";rs.value=null}
-  let weak=fields.filter(x=>!x[1]||x[2]<2).map(x=>x[0]);
+  let weak=fields.filter(x=>!x[1]||x[2]<1).map(x=>x[0]);
   confidence.innerHTML=weak.length?
-   `<span class="warn">Pārbaudi:</span> ${weak.join(", ")}. v20 apzināti neatmin trūkstošos laukus.`:
-   `<span class="good">✓ Galvenie lauki nolasīti ar vairāku OCR mēģinājumu sakritību.</span>`;
+   `<span class="warn">Analīze pabeigta.</span> Nenolasījās: ${weak.join(", ")}. Manuāli vari ievadīt tikai Hero hand.`:
+   `<span class="good">✓ Galvenie lauki nolasīti.</span>`;
 
   pills.innerHTML=`<span class=pill>${players.value==="2"?"HEADS-UP":"3-MAX"}</span>`+
    (hand.value?`<span class=pill>${hand.value}</span>`:"")+(pos.value?`<span class=pill>${pos.value}</span>`:"")+
@@ -459,7 +490,7 @@ RIGHT BET => ${rb.value} [${rb.raw}]
 POT => ${pv.value} [${pv.raw}]
 DEALER yellow ratio => ${yr.toFixed(5)}`;
 
-  drawDebug();result.classList.remove("hide");status.textContent="✓ Galda normalizēšana + OCR pabeigta.";
+  drawDebug();result.classList.remove("hide");status.textContent="✓ Analīze pabeigta.";
  }catch(e){result.classList.remove("hide");status.textContent="Analīzes kļūda: "+e.message;diag.textContent="ERROR: "+(e&&e.stack?e.stack:e);setBestAction("PĀRBAUDI DATUS","Analīze apstājās ar kļūdu; detalizācija redzama uzreiz zemāk.")}
 }
 function drawDebug(){

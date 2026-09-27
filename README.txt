@@ -1,8 +1,19 @@
-SpinGo Photo Review v20
+SpinGo Photo Review v22
 
-UI change requested:
-- Hero hand is the ONLY manually editable situation field.
-- Players, position, Hero stack, opponent stacks, blinds, next blinds, pot and bets
-  are displayed from photo recognition but cannot be manually edited.
-- If card OCR fails, type e.g. KJo in Hero hand and the recommendation updates instantly.
-- Automatic card recognition remains enabled; manual Hero hand is only the fallback.
+AUDIT FIX:
+v21 still had a serious mobile performance issue. Its Promise timeouts did not cancel
+the Tesseract.recognize calls already running in the background. A single photo could
+launch dozens of OCR recognitions.
+
+v22:
+- creates ONE reusable Tesseract worker;
+- runs ONE OCR pass per normal field, sequentially;
+- uses only TWO targeted OCR attempts per card;
+- no Promise.all OCR fan-out;
+- no orphaned OCR jobs from timeout races;
+- Hero hand remains the only manually editable field;
+- JS syntax verified with node --check;
+- checked that old voteOCR/Promise.all fan-out is absent.
+
+Note: this is a static/code-path audit. Browser OCR accuracy still depends on the actual
+photo and device; no claim is made that a browser-only OCR model is a full vision model.
